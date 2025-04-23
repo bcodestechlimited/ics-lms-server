@@ -4,9 +4,7 @@ import { CourseModule } from "../models/course-module.model";
 
 const connectToDB = async () => {
   await mongoose
-    .connect(
-      "mongodb+srv://bodunrindavid:davidbond@cluster0.phiae.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
-    )
+    .connect("")
     .then(() => {
       console.log("DB connected successfully");
     })

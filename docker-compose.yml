@@ -9,7 +9,7 @@ services:
     env_file:
       - ./.env
     environment:
-      - MONGO_URI:"mongodb+srv://bodunrindavid:davidbond@cluster0.phiae.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+      - MONGO_URI:""
       - ADMIN_EMAIL:"admin@bct.com",
       - PORT:"5500"
     volumes:
