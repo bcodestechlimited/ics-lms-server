@@ -1,0 +1,48 @@
+name: Node.js CI
+
+on:
+  push:
+    branches: ["main-support"]
+  pull_request:
+    branches: ["main-support"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [20.x]
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
+      - run: npm ci --f
+
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up SSH key
+        run: |
+          mkdir -p ~/.ssh/
+          echo "${{ secrets.SERVER_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
+
+      - name: Deploy to server
+        run: |
+          ssh -i ~/.ssh/id_rsa ${{ secrets.SERVER_USERNAME }}@${{ secrets.SERVER_IP }} -p ${{ secrets.SERVER_PORT }} "
+            git config --global --add safe.directory ${{ secrets.PROJECT_PATH }} &&
+            cd ${{ secrets.PROJECT_PATH }} &&
+            git pull &&
+            npm install --f &&
+            pm2 restart ics-aca-support &&
+            echo 'Code Deployed Successfully!'
+          "

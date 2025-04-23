@@ -1,0 +1,826 @@
+import bcrypt from "bcryptjs";
+import {StatusCodes} from "http-status-codes";
+import mongoose, {Types} from "mongoose";
+import {CourseDTO} from "../dtos/course.dto";
+import {
+  CreateAssessmentInterface,
+  CreateBenchmarkInterface,
+  CreateCourseInterface,
+} from "../interfaces";
+import {
+  AssignCourseToUsersInterface,
+  BulkAssignCourseInterface,
+  CourseQueryOptions,
+} from "../interfaces/course.interface";
+import Course from "../models/Course";
+import CourseAssessment from "../models/course-assessment.model";
+import CourseBenchmark from "../models/course-benchmark.model";
+import CoursePricing from "../models/course-pricing.model";
+import Progress, {CourseStatusEnum} from "../models/progress.model";
+import User, {EmailInvitationEnum, UserRole} from "../models/User";
+import {
+  generateEmailInvitationToken,
+  generateRandomPassword,
+} from "../utils/lib";
+import {ServiceResponse} from "../utils/service-response";
+import {fileParserService} from "./file-parser.service";
+import {emailService} from "./mail.service";
+import {APP_CONFIG} from "../config/app.config";
+import {certificateService} from "./certificate.service";
+
+class CourseService {
+  async fetchAllPublishedCourse({options, query}: CourseQueryOptions) {
+    const courses = await Course.paginate(query, options);
+    return courses;
+  }
+  /**
+   * Creates a new course in the database.
+   *
+   * @param payload - An object conforming to the CreateCourseInterface containing:
+   *   - courseTitle: The title of the course.
+   *   - courseDescription: A description of the course.
+   *   - courseImage: A URL or path to an image representing the course.
+   * @returns A Promise that resolves to the created course object.
+   * @throws Will throw an error if the course creation fails.
+   */
+
+  async createNewCourse(payload: CreateCourseInterface) {
+    try {
+      const course = await Course.create({
+        title: payload.courseTitle,
+        description: payload.courseDescription,
+        image: payload.courseImage,
+        summary: payload.courseSummary,
+        category: payload.courseCategory,
+        skillLevel: payload.skillLevel,
+      });
+
+      return course;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Creates a course assessment by inserting multiple questions into the database.
+   *
+   * @param payload - An object conforming to the CreateAssessmentInterface containing:
+   *   - courseId: The ID of the course for which the assessment is being created.
+   *   - questions: An array of questions to be added to the assessment, each containing:
+   *     - question: The text of the question.
+   *     - type: The type of the question ("single" or "multiple").
+   *     - options: An array of available options for the question, each containing:
+   *       - id: A unique identifier for the option.
+   *       - text: The text of the option.
+   *       - isCorrect: A boolean indicating if the option is the correct answer.
+   *
+   * @returns A promise that resolves to an object containing a message and the inserted assessment data.
+   *
+   * @throws Will throw an error if the insertion fails.
+   */
+
+  async createCourseAssessment(payload: CreateAssessmentInterface) {
+    try {
+      const response = await CourseAssessment.insertMany(
+        payload.questions.map((q) => {
+          return {
+            ...q,
+            courseId: payload.courseId,
+          };
+        })
+      );
+
+      return {
+        message: "Course Assessment created",
+        data: response,
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Creates a course benchmark by saving retakes and benchmark score to the database.
+   *
+   * @param payload - An object conforming to the CreateBenchmarkInterface containing:
+   *   - courseId: The ID of the course the benchmark is associated with.
+   *   - retakes: The number of retake attempts allowed.
+   *   - benchmark: The benchmark score required.
+   *
+   * @returns A promise that resolves to an object containing the created benchmark data.
+   *
+   * @throws Will throw an error if the benchmark creation fails.
+   */
+  async createCourseBenchmark(payload: CreateBenchmarkInterface) {
+    try {
+      const response = await CourseBenchmark.create(payload);
+      return {
+        data: response,
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getCourseModules(id: string) {
+    const course = await Course.findById({_id: id}).populate("course_modules");
+
+    if (!course) {
+      return {
+        success: false,
+        message: "No course found",
+        data: null,
+      };
+    }
+
+    return {
+      data: course,
+      message: "Success",
+      success: true,
+    };
+  }
+
+  async createCoursePricing(payload: {
+    courseId: string;
+    coursePricing: number;
+  }) {
+    try {
+      const response = await CoursePricing.create(payload);
+      return {
+        data: response,
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async publishCourse(courseId: string) {
+    const course = await Course.findById({_id: courseId});
+    if (!course) {
+      return {
+        success: false,
+        message: "No course found",
+      };
+    }
+    course.isPublished = course.isPublished ? false : true;
+    await course.save();
+    return {
+      success: true,
+      message: "Course published successfully",
+    };
+  }
+
+  async fetchCourseById(
+    courseId: string | mongoose.Types.ObjectId,
+    userRole: string | undefined
+  ) {
+    try {
+      const course = await Course.findById(courseId).populate(
+        "course_modules course_price"
+      );
+      if (!course) {
+        return ServiceResponse.failure(
+          "No course found",
+          null,
+          StatusCodes.NOT_FOUND
+        );
+      }
+
+      const userCourseResponse = new CourseDTO(course);
+
+      const response = userRole === "superadmin" ? course : userCourseResponse;
+
+      return ServiceResponse.success(
+        "Course found",
+        {data: response},
+        StatusCodes.OK
+      );
+    } catch (error) {
+      return ServiceResponse.failure(
+        "Internal Server Error",
+        null,
+        StatusCodes.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  async fetchAllAdminCourses({options, query}: CourseQueryOptions) {
+    const course = await Course.paginate(query, options);
+
+    return {
+      success: true,
+      message: "Success",
+      data: course,
+    };
+  }
+
+  async updateCourse(courseId: string, payload: Record<string, any>) {
+    const course = await Course.findByIdAndUpdate(courseId, payload, {
+      new: true,
+    });
+
+    if (!course) {
+      return {
+        success: false,
+        data: course,
+      };
+    }
+
+    return {
+      success: true,
+      data: course,
+    };
+  }
+
+  async updateCourseBenchmark(
+    payload: {retakes: number; benchmark: number},
+    id: string
+  ) {
+    const bookmark = await CourseBenchmark.findByIdAndUpdate(id, payload, {
+      new: true,
+    });
+
+    return bookmark;
+  }
+
+  async fetchCourseAssesments(id: string) {
+    const course_assessment = await CourseAssessment.find({courseId: id});
+    if (!course_assessment) {
+      return {
+        success: false,
+        message: "No course assessment found",
+        data: null,
+      };
+    }
+
+    return {
+      success: true,
+      message: "Success",
+      data: course_assessment,
+    };
+  }
+
+  public async submitCourseAssessment(
+    userId: string,
+    courseId: string,
+    answers: {questionId: string; selectedOptionId: number}[]
+  ) {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      const questions = await CourseAssessment.find({courseId});
+      if (!questions.length) {
+        await session.abortTransaction();
+        return ServiceResponse.failure(
+          "No assessment questions found",
+          null,
+          StatusCodes.NOT_FOUND
+        );
+      }
+
+      const course = await Course.findById(courseId)
+        .populate("course_benchmark")
+        .session(session)
+        .lean();
+
+      const benchmarkDoc = (course as any).course_benchmark;
+      const maxRetakes = benchmarkDoc?.retakes ?? 0;
+      const passingScore = benchmarkDoc?.benchmark ?? 50;
+
+      const progress = await Progress.findOne({
+        user: userId,
+        course: courseId,
+      }).session(session);
+
+      if (!progress) {
+        await session.abortTransaction();
+        return ServiceResponse.failure(
+          "No progress found",
+          null,
+          StatusCodes.NOT_FOUND
+        );
+      }
+
+      // Convert answers to proper ObjectIds
+      const validatedAnswers = questions.map((question) => {
+        const userAnswer = answers.find(
+          (a) => a.questionId === question._id.toString()
+        );
+        const correctOption = question.options.find((o) => o.isCorrect);
+
+        return {
+          questionId: new mongoose.Types.ObjectId(question._id),
+          selectedOptionId: userAnswer?.selectedOptionId || -1,
+          isCorrect: userAnswer?.selectedOptionId === correctOption?.id,
+        };
+      });
+
+      // Calculate score
+      const correctCount = validatedAnswers.filter((a) => a.isCorrect).length;
+      const scorePercent = Number(
+        ((correctCount / questions.length) * 100).toFixed(2)
+      );
+      const passed = scorePercent >= passingScore;
+      const currentAttempt = progress.assessmentAttempts + 1;
+      const isFinalAttempt = currentAttempt > maxRetakes + 1;
+
+      // Store attempt
+      progress.assessmentHistory.push({
+        attempt: currentAttempt,
+        timestamp: new Date(),
+        score: scorePercent,
+        passed,
+        isFinalAttempt,
+        answers: validatedAnswers.map((a) => ({
+          questionId: a.questionId,
+          selectedOptionId: a.selectedOptionId,
+          isCorrect: a.isCorrect,
+        })),
+      });
+
+      progress.assessmentAttempts = currentAttempt;
+      progress.score = scorePercent;
+
+      if (passed) {
+        progress.status = CourseStatusEnum.COMPLETED;
+        progress.completedAt = new Date();
+        if (!progress.certificateIssued) {
+          await certificateService.issueCertificate(userId, courseId, session);
+          progress.certificateIssued = true;
+        }
+      } else if (isFinalAttempt) {
+        progress.status = CourseStatusEnum.FAILED;
+      }
+
+      await progress.save({session});
+      await session.commitTransaction();
+
+      // Prepare corrections
+      const corrections = isFinalAttempt
+        ? validatedAnswers.map((a) => ({
+            questionId: a.questionId.toString(),
+            correctOption: questions
+              .find((q) => q._id.toString() === a.questionId.toString())
+              ?.options.find((o) => o.isCorrect)?.id,
+            userSelected: a.selectedOptionId,
+            isCorrect: a.isCorrect,
+          }))
+        : undefined;
+
+      return ServiceResponse.success(
+        "Assessment graded",
+        {
+          data: {
+            passed,
+            scorePercent,
+            currentAttempt,
+            remainingAttempts: Math.max(maxRetakes + 1 - currentAttempt, 0),
+            isFinalAttempt,
+            corrections,
+          },
+        },
+        StatusCodes.OK
+      );
+    } catch (error) {
+      await session.abortTransaction();
+      return ServiceResponse.failure(
+        "Internal Server Error",
+        null,
+        StatusCodes.INTERNAL_SERVER_ERROR
+      );
+    } finally {
+      session.endSession();
+    }
+  }
+
+  async uploadCourseCertificate(cloudinary_image: string, courseId: string) {
+    try {
+      const course = await Course.findByIdAndUpdate(
+        {_id: courseId},
+        {
+          $set: {certificate: cloudinary_image},
+        },
+        {new: true}
+      );
+
+      return course;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async launchCourse(courseId: string, userId: string) {
+    try {
+      const courseDoc = await Course.findById(courseId);
+      if (!courseDoc) {
+        return ServiceResponse.failure(
+          "Course not found",
+          null,
+          StatusCodes.NOT_FOUND
+        );
+      }
+
+      const modules = (courseDoc.course_modules || []).map((moduleId: any) => ({
+        module: moduleId,
+        completed: false,
+        completedAt: null,
+      }));
+
+      const existingProgress = await Progress.findOne({
+        user: userId,
+        course: courseId,
+      });
+
+      if (existingProgress) {
+        return ServiceResponse.success(
+          "User has already started the course",
+          {
+            data: {
+              courseId: courseDoc._id,
+              moduleId: modules[0].module,
+            },
+          },
+          StatusCodes.OK
+        );
+      }
+
+      const progress = await Progress.create({
+        user: userId,
+        course: courseId,
+        progressPercentage: 0,
+        modules,
+        score: 0,
+        certificateIssued: false,
+        status: CourseStatusEnum.IN_PROGRESS,
+      });
+      if (!progress) {
+        return ServiceResponse.failure(
+          "Failed to create progress document",
+          null,
+          StatusCodes.BAD_REQUEST
+        );
+      }
+
+      const updatedCourse = await Course.findByIdAndUpdate(
+        courseId,
+        {$push: {progress: progress._id}},
+        {new: true}
+      );
+      if (!updatedCourse) {
+        return ServiceResponse.failure(
+          "Course not found",
+          null,
+          StatusCodes.NOT_FOUND
+        );
+      }
+
+      const updatedUser = await User.findByIdAndUpdate(
+        userId,
+        {$push: {progress: progress._id, courses: courseDoc._id}},
+        {new: true}
+      );
+      if (!updatedUser) {
+        return ServiceResponse.failure(
+          "User not found",
+          null,
+          StatusCodes.NOT_FOUND
+        );
+      }
+
+      return ServiceResponse.success(
+        "Course launched successfully",
+        {
+          data: {
+            user: updatedUser,
+            progress,
+            courseId: courseDoc._id,
+            moduleId: modules[0].module,
+          },
+        },
+        StatusCodes.OK
+      );
+    } catch (error) {
+      return ServiceResponse.failure(
+        "Internal Server Error",
+        null,
+        StatusCodes.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  async fetchCourseSummary(id: string) {
+    const course = await Course.findById({_id: id}).populate("course_modules");
+
+    if (!course) {
+      return {
+        success: false,
+        data: null,
+        message: "No course found",
+      };
+    }
+
+    return {
+      success: true,
+      data: course,
+      message: "Success",
+    };
+  }
+
+  public async assignCourseToUser({
+    userId,
+    courseIds,
+    durationDays,
+  }: AssignCourseToUsersInterface) {
+    try {
+      // test: check if it is correct!
+
+      const user = await User.findById({_id: userId});
+      if (!user) {
+        throw new Error("User not found");
+      }
+      const userEnrolledCourseIds = new Set(
+        user.courseEnrollments?.map((enrollment) =>
+          enrollment.course.toString()
+        ) || []
+      );
+
+      const now = new Date();
+      const defaultDuration = durationDays || 90;
+      const expiresAt = new Date(
+        now.getTime() + defaultDuration * 24 * 60 * 60 * 1000
+      );
+
+      const newCourseObjectIds: Types.ObjectId[] = [];
+
+      for (const courseId of courseIds) {
+        const courseObjectId = new mongoose.Types.ObjectId(courseId);
+
+        // Check if course already exists in user's enrollments
+        if (!userEnrolledCourseIds.has(courseId)) {
+          // Initialize courseEnrollments array if it doesn't exist
+          if (!user.courseEnrollments) {
+            user.courseEnrollments = [];
+          }
+
+          user.courseEnrollments.push({
+            course: courseObjectId,
+            expiresAt: expiresAt,
+            isAssigned: true,
+          });
+
+          newCourseObjectIds.push(courseObjectId);
+        }
+      }
+
+      await user.save();
+      for (const courseObjectId of newCourseObjectIds) {
+        const course = await Course.findById(courseObjectId);
+        if (!course) continue;
+
+        const participantIds = new Set(
+          course.participants?.map((id) => id.toString()) || []
+        );
+
+        // Add user to course participants if not already there
+        if (!participantIds.has(userId)) {
+          if (!course.participants) {
+            course.participants = [];
+          }
+          course.participants.push(new mongoose.Types.ObjectId(userId));
+
+          // Remove from past participants if user was there
+          if (course.pastParticipants?.some((id) => id.toString() === userId)) {
+            course.pastParticipants = course.pastParticipants.filter(
+              (id) => id.toString() !== userId
+            );
+          }
+          // test: check if this place works as expected
+          // course.isAssigned = true;
+          await course.save();
+        }
+      }
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  public async bulkAssigningOfCourses(payload: BulkAssignCourseInterface) {
+    try {
+      const users = await fileParserService.parseCsv(payload.file);
+      const results = await Promise.all(
+        users.map(async (user) => {
+          const existingUser = await User.findOne({email: user.email});
+
+          let password;
+          let token: {userToken: string; hashedToken: string};
+          let createdUser;
+
+          token = generateEmailInvitationToken();
+          if (!existingUser) {
+            password = generateRandomPassword();
+            const passwordHash = await bcrypt.hash(password, 10);
+
+            createdUser = await User.create({
+              email: user.email,
+              firstName: user.firstname,
+              lastName: user.lastname,
+              role: payload.isIcsStaff ? UserRole.STAFF : UserRole.USER,
+              emailInvitationToken: token.hashedToken,
+              staffEmailInvitationSentAt: Date.now(),
+              emailInvitationStatus: EmailInvitationEnum.PENDING,
+              password: passwordHash,
+            });
+          }
+
+          const userToUse = existingUser ?? createdUser;
+          const currentCourses = new Set(
+            userToUse.courses?.map((id) => id.toString()) || []
+          );
+          const allCoursesAssigned = payload.courseIds.every((id) =>
+            currentCourses.has(id)
+          );
+
+          if (allCoursesAssigned) {
+            return {
+              email: user.email,
+              success: true,
+              message: "User already assigned to all selected courses",
+            };
+          }
+
+          // Assign course
+          await courseService.assignCourseToUser({
+            courseIds: payload.courseIds,
+            userId: userToUse._id,
+            durationDays: payload.durationDays,
+          });
+
+          const emailResponse = await emailService.sendEmailTemplate({
+            subject: existingUser
+              ? "You've been assigned a course"
+              : "Invitation to join L&D LMS",
+            template: existingUser ? "course-assignment" : "invite-staff",
+            to: user.email,
+            variables: {
+              platformName: "L&D LMS",
+              firstName: user.firstname,
+              durationDays: payload.durationDays,
+              companyName: "ICS ACADEMY",
+              loginUrl: existingUser
+                ? `${APP_CONFIG.CLIENT_FRONTEND_BASE_URL}/dashboard`
+                : `${
+                    APP_CONFIG.CLIENT_FRONTEND_BASE_URL
+                  }/auth/staff-onboarding?token=${
+                    token.userToken
+                  }&email=${encodeURIComponent(user.email)}`,
+              email: user.email,
+              password: password,
+            },
+          });
+          if (emailResponse.status !== "ok") {
+            return {email: user.email, success: false};
+          }
+
+          return {email: user.email, success: true};
+        })
+      );
+
+      const failed = results.filter((r) => !r.success);
+      const alreadyAssigned = results.filter((r) =>
+        r.message?.includes("already assigned")
+      );
+      const successful =
+        results.length - failed.length - alreadyAssigned.length;
+
+      return ServiceResponse.success(
+        `Bulk processing done. ${successful} newly assigned, ${alreadyAssigned.length} already assigned, ${failed.length} failed.`,
+        {
+          failedEmails: failed.map((f) => f.email),
+          alreadyAssignedEmails: alreadyAssigned.map((a) => a.email),
+        },
+        StatusCodes.OK
+      );
+    } catch (error) {
+      return ServiceResponse.failure(
+        "Internal server error",
+        null,
+        StatusCodes.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  public async processCourseExpirations(): Promise<void> {
+    await User.checkAllUsersForExpiredCourses();
+  }
+
+  //note: this are useful class methods that are needed for the class
+  /**
+   * Unenroll a user from a course
+   * @param userId User ID
+   * @param courseId Course ID
+   * @returns Success status
+   */
+  static async unenrollUserFromCourse(
+    userId: mongoose.Types.ObjectId | string,
+    courseId: mongoose.Types.ObjectId | string
+  ): Promise<boolean> {
+    const course = await Course.findById(courseId);
+
+    if (!course) {
+      throw new Error("Course not found");
+    }
+
+    const userObjectId =
+      typeof userId === "string" ? new mongoose.Types.ObjectId(userId) : userId;
+    return course.unenrollUser(userObjectId);
+  }
+
+  /**
+   * Enroll a user in a course with expiration
+   * @param userId User ID
+   * @param courseId Course ID
+   * @param durationDays Duration in days (optional, will use course default if not provided)
+   * @returns Expiration date
+   */
+  static async enrollUserInCourse(
+    userId: mongoose.Types.ObjectId | string,
+    courseId: mongoose.Types.ObjectId | string,
+    durationDays?: number
+  ): Promise<Date> {
+    const course = await Course.findById(courseId);
+
+    if (!course) {
+      throw new Error("Course not found");
+    }
+
+    const userObjectId =
+      typeof userId === "string" ? new mongoose.Types.ObjectId(userId) : userId;
+    return course.enrollUser(userObjectId, durationDays);
+  }
+
+  /**
+   * Check if a user has access to a course
+   * @param userId User ID
+   * @param courseId Course ID
+   * @returns Boolean indicating if user has access
+   */
+  static async hasUserAccessToCourse(
+    userId: mongoose.Types.ObjectId | string,
+    courseId: mongoose.Types.ObjectId | string
+  ): Promise<boolean> {
+    const user = await User.findById(userId);
+
+    if (!user || !user.courseEnrollments) {
+      return false;
+    }
+
+    const now = new Date();
+    const courseObjectId =
+      typeof courseId === "string"
+        ? new mongoose.Types.ObjectId(courseId)
+        : courseId;
+
+    return user.courseEnrollments.some(
+      (enrollment) =>
+        enrollment.course.equals(courseObjectId) && enrollment.expiresAt > now
+    );
+  }
+
+  /**
+   * Get all active courses for a user
+   * @param userId User ID
+   * @returns Array of course IDs
+   */
+  static async getUserActiveCourses(
+    userId: mongoose.Types.ObjectId | string
+  ): Promise<mongoose.Types.ObjectId[]> {
+    const user = await User.findById(userId);
+
+    if (!user || !user.courseEnrollments) {
+      return [];
+    }
+
+    const now = new Date();
+    return user.courseEnrollments
+      .filter((enrollment) => enrollment.expiresAt > now)
+      .map((enrollment) => enrollment.course);
+  }
+
+  /**
+   * Get all expired courses for a user
+   * @param userId User ID
+   * @returns Array of course IDs
+   */
+  public async getUserExpiredCourses(userId: mongoose.Types.ObjectId | string) {
+    const user = await User.findById(userId).populate({
+      path: "expiredCourses.course",
+      model: "Course",
+    });
+
+    return user?.expiredCourses || [];
+  }
+}
+
+const courseService = new CourseService();
+export {courseService, CourseService};

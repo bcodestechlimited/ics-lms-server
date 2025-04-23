@@ -1,0 +1,93 @@
+import {Router} from "express";
+import {couponController} from "../controllers/coupon.controller";
+import {checkUserRole, isAuthenticated} from "../Middlewares/Auth";
+import {apiLimiter} from "../Middlewares/RateLimiter";
+import validateRequest from "../Middlewares/validation.middleware";
+import {
+  CouponCheckoutSchema,
+  CreateCouponSchema,
+} from "../Schema/coupon.schema";
+
+const router = Router();
+
+router
+  .route("/apply-coupon")
+  .post(
+    apiLimiter,
+    isAuthenticated,
+    checkUserRole(["admin", "superadmin"]),
+    couponController.applyCoupon
+  );
+
+router
+  .route("/analytics")
+  .get(
+    apiLimiter,
+    isAuthenticated,
+    checkUserRole(["admin", "superadmin"]),
+    couponController.getCouponAnalytics
+  );
+
+router
+  .route("/edit-coupon")
+  .put(
+    apiLimiter,
+    isAuthenticated,
+    checkUserRole(["admin", "superadmin"]),
+    couponController.editCoupon
+  );
+
+// test: api
+router.post(
+  "/coupon-checkout",
+  apiLimiter,
+  isAuthenticated,
+  validateRequest(CouponCheckoutSchema),
+  couponController.couponCheckout
+);
+
+// TODO: UPDTE COUPON STATUS
+router
+  .route("/update-status")
+  .patch(
+    apiLimiter,
+    isAuthenticated,
+    checkUserRole(["admin", "superadmin"]),
+    couponController.updateCouponStatus
+  );
+
+router
+  .route("/")
+  .post(
+    apiLimiter,
+    validateRequest(CreateCouponSchema),
+    isAuthenticated,
+    checkUserRole(["admin", "superadmin"]),
+    couponController.createCoupon
+  )
+  .get(
+    apiLimiter,
+    isAuthenticated,
+    checkUserRole(["admin", "superadmin"]),
+    couponController.getCoupons
+  );
+
+router
+  .route("/:id/users")
+  .get(
+    apiLimiter,
+    isAuthenticated,
+    checkUserRole(["admin", "superadmin"]),
+    couponController.getCouponUsers
+  );
+
+router
+  .route("/:id")
+  .get(
+    apiLimiter,
+    isAuthenticated,
+    checkUserRole(["admin", "superadmin"]),
+    couponController.getACouponById
+  );
+
+export default router;

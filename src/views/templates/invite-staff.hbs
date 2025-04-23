@@ -1,0 +1,53 @@
+<div class="content" style="padding: 40px 20px; font-family: Arial, sans-serif;">
+  <h1 style="font-size: 26px; margin-bottom: 20px; color: #2A2A2A;">
+    Welcome to {{platformName}}! 🚀
+  </h1>
+
+  <p style="margin-bottom: 16px; font-size: 15px; color: #444;">
+    Hi <strong>{{firstName}}</strong>,
+  </p>
+
+  <p style="margin-bottom: 20px; font-size: 15px; color: #444;">
+    Your learning journey with <strong>{{companyName}}</strong> has just begun! We've created your account on the {{platformName}} platform, where you'll access resources, engage with interactive content, and track your course progress.
+  </p>
+
+  <p style="margin-bottom: 10px; font-size: 15px; color: #444;">
+    🎓 The moment you log in, your dashboard will display the list of courses assigned to you — tailored for your learning goals.
+  </p>
+
+  <p style="margin-bottom: 20px; font-size: 15px; color: #444;">
+    <strong>Important:</strong> You have <strong>{{durationDays}} day(s)</strong> to complete the assigned course(s). After this period, your access to the course(s) will expire, and they will be moved to your <em>Expired Courses</em> section for your reference. Be sure to complete your learning before the deadline!
+  </p>
+
+  <div style="background: #F8F8F8; padding: 20px; border-radius: 8px; margin: 25px 0;">
+    <h2 style="font-size: 18px; margin-top: 0;">First-Time Access Instructions:</h2>
+    <ol style="padding-left: 20px; text-align: left; font-size: 14px; color: #333;">
+      <li>Click to login: <a href="{{loginUrl}}" style="color: #FF502A;">{{loginUrl}}</a></li>
+      <li>Username: <strong>{{email}}</strong></li>
+      <li>Password: <strong>{{password}}</strong></li>
+    </ol>
+  </div>
+
+  <div class="button-container" style="margin: 30px 0;">
+    <a
+      href="{{loginUrl}}"
+      style="background: #FF502A; color: white; padding: 12px 30px; border-radius: 5px; font-weight: bold; text-decoration: none; display: inline-block;">
+      Access Your Dashboard
+    </a>
+
+    <p style="margin-top: 15px; font-size: 14px;">Or copy and paste this link into your browser:<br />
+      <a href="{{loginUrl}}" style="color: #FF502A;">{{loginUrl}}</a>
+    </p>
+  </div>
+
+  <div style="border-left: 3px solid #FF502A; padding-left: 15px; margin: 25px 0; font-size: 13px; color: #666;">
+    <strong>Security Reminder:</strong><br />
+    • You'll be prompted to change your password on first login<br />
+    • Please do not share your credentials<br />
+    • Need help? Contact <a href="mailto:{{supportEmail}}" style="color: #FF502A;">IT Support</a>
+  </div>
+
+  <p style="margin-top: 25px; font-size: 14px;">
+    <em>We’re thrilled to have you onboard and can’t wait to see your progress!</em>
+  </p>
+</div>

@@ -1,0 +1,38 @@
+{{#*inline "content"}}
+<h1 style="color: #2E7D32; font-size: 28px; margin-bottom: 25px;">
+    ✓ Extension Request Approved!
+</h1>
+
+<p>Hi {{firstName}},</p>
+
+<p>We're pleased to inform you that your course access extension request has been approved! You now have <strong>{{extensionDays}} additional days</strong> to complete your course.</p>
+
+<div style="background: #F8FAFC; padding: 20px; border-radius: 8px; margin: 25px 0;">
+    <h3 style="margin-top: 0;">Extension Details:</h3>
+    <ul class="features">
+        <li>📅 <strong>{{extensionDays}} days</strong> added to your access period</li>
+        <li>📚 Course: {{courseName}}</li>
+        <li>⏳ New expiration date: {{expirationDate}}</li>
+    </ul>
+</div>
+
+<div class="button-container">
+    <a href="{{dashboardUrl}}" style="
+        background: #FF502A;
+        color: white;
+        padding: 12px 30px;
+        border-radius: 8px;
+        display: inline-block;
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 20px;
+    ">Continue Learning Now →</a>
+</div>
+
+<p style="margin: 25px 0;">Need more time or having trouble accessing the course?<br>
+Our support team is ready to help at <a href="{{mailto:supportEmail}}">{{supportEmail}}</a>.</p>
+
+<p style="font-size: 13px; color: #666;">
+    *Your extended access period starts from your original expiration date
+</p>
+{{/inline}}

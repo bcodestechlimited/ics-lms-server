@@ -1,0 +1,22 @@
+{{#> base_template}}
+  {{#*inline "content"}}
+    <div>
+      <div class="verification-header">
+        <img src="https://i.imghippo.com/files/21z1w1724265467.png" alt="registration" />
+      </div>
+    </div>
+    <h1>Successful Registration</h1>
+    <p class="greeting"><strong>Hi {{name}},</strong></p>
+    <p>Thank you for registering your account with us. We're excited to have you on board!</p>
+    <p>To activate your account, please click on the button below:</p>
+
+    <div style="text-align:center; margin: 20px 0;">
+      <a href="{{activationLink}}" style="background-color: #007BFF; color:white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-size: 16px;">
+        Activate your account
+      </a>
+    </div>
+
+    <p><strong>Important:</strong> This activation link will expire in <strong>24 hours</strong>. If you do not activate your account within this time, you will need to register again.</p>
+
+  {{/inline}}
+{{/base_template}}

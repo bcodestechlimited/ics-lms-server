@@ -1,0 +1,51 @@
+[
+  {
+    "course_title": "Frontend Web Development",
+    "course_description": "Dive into the world of web development! Learn the fundamentals of HTML, CSS, and JavaScript to build your own interactive websites",
+    "course_modules": [
+      {
+        "title": "Module 1",
+        "duration": "4h 30m",
+        "modules": [
+          {
+            "title": "mission 1",
+            "resources": [
+              {
+                "name": "Introduction",
+                "content": "<iframe src='https://drive.google.com/file/d/12wjan6vJW74tYcIy2StItZg-EFSzVXJZ/preview' width='640' height='480' allow='autoplay'></iframe>",
+                "duration": "1:16",
+                "id": "1"
+              },
+              {
+                "name": "VS Code",
+                "content": "<iframe src='https://drive.google.com/file/d/1mFcZYQvZYPZjAho3-Jb44YbNAE0eDFNP/preview' width='640' height='480' allow='autoplay'></iframe>",
+                "duration": "7:46",
+                "id": "2"
+              },
+              {
+                "name": "VS Code 2",
+                "content": "<iframe src='https://drive.google.com/file/d/1zd5RpGY_PXDHoNbdFJjlm1kCnc8hI4w8/preview' width='640' height='480' allow='autoplay'></iframe>",
+                "duration": "3:26"
+              },
+              {
+                "name": "Web development",
+                "content": "<iframe src='https://drive.google.com/file/d/1I7KTh5sms2HhvXp5SGDUEUZxCRO4B3S4/preview' width='640' height='480' allow='autoplay'></iframe>",
+                "duration": "4:46"
+              },
+              {
+                "name": "Github",
+                "content": "<iframe src='https://drive.google.com/file/d/1jjfGvj0XDirDnYwib8E9K5amGQmYbdK0/preview' width='640' height='480' allow='autoplay'></iframe>",
+                "duration": "4:21"
+              },
+              {
+                "name": "Outro",
+                "content": "<iframe src='https://drive.google.com/file/d/1gJMh3tg15icut40nkUE4Eq5_5Pj1umEj/preview' width='640' height='480' allow='autoplay'></iframe>",
+                "duration": "1:16"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

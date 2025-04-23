@@ -1,0 +1,41 @@
+{{#> base_template}}
+  {{#*inline "content"}}
+  <h1>🎉 Welcome to Your New Course!</h1>
+    
+  <p>Dear {{userName}},</p>
+
+  <p>We're excited to let you know that you've successfully enrolled in <strong>{{courseName}}</strong>! You can start learning immediately through your dashboard.</p>
+
+  <div style="background: #F8FAFC; padding: 20px; border-radius: 8px; margin: 25px 0;">
+    <h3 style="margin-top: 0;">Course Details:</h3>
+    <ul class="features">
+      <li>📚 Course: {{courseName}}</li>
+      <li>👨🏫 Instructor: {{instructorName}}</li>
+    </ul>
+  </div>
+
+  <div class="button-container">
+    <a href="{{dashboardUrl}}" style="
+      background: #FF502A;
+      color: white;
+      padding: 12px 30px;
+      border-radius: 8px;
+      display: inline-block;
+      font-size: 16px;
+      font-weight: 600;
+    ">Start Learning Now →</a>
+  </div>
+
+  <h3 style="margin-top: 30px;">What's Next?</h3>
+  <ol style="text-align: left; padding-left: 20px;">
+    <li>Visit your <a href="{{dashboardUrl}}">learning dashboard</a></li>
+    <li>Access course materials 24/7</li>
+    <li>Track your progress</li>
+    <li>Complete assignments</li>
+    <li>Earn your certificate</li>
+  </ol>
+
+  <p style="margin: 25px 0;">Need help getting started?<br>
+  Check our <a href="{{helpCenterEmail}}">Beginner's Guide</a> or reply to this email.</p>
+  {{/inline}}
+{{/base_template}}
