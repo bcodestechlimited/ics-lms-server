@@ -6,8 +6,8 @@
   "author": "David Bodunrin",
   "license": "MIT",
   "scripts": {
-    "build": "tsup",
-    "start": "node dist/index.js",
+    "build": "npm install",
+    "start": "ts-node --transpile-only ./src/index.ts",
     "dev": "nodemon src/index.ts"
   },
   "keywords": [
@@ -79,19 +79,9 @@
     "@types/node-schedule": "^2.1.7",
     "@types/nodemailer": "^6.4.15",
     "@types/uuid": "^10.0.0",
+    "copyfiles": "^2.4.1",
     "nodemon": "^3.1.9",
     "tsup": "^8.4.0",
     "typescript": "^5.5.4"
-  },
-  "tsup": {
-    "entry": [
-      "src"
-    ],
-    "splitting": false,
-    "sourcemap": true,
-    "clean": true,
-    "loader": {
-      ".hbs": "text"
-    }
   }
 }
