@@ -7,7 +7,7 @@ mongoose.set("strictQuery", true);
 const connectDB = async () => {
   try {
     let uri: string = process.env.MONGO_URI || "";
-    await mongoose.connect(uri);
+    await mongoose.connect(uri, {dbName: "ics-lms"});
     console.log("[DATABASE 📢]: DB connected to MONGODB 🚀🚀".bgBlack.blue);
   } catch (err) {
     console.log(err);
