@@ -103,7 +103,7 @@ class AuthService {
 
       // Email verification
       const activationToken = generateActivationToken(user.id.toString());
-      const activationLink = `${APP_CONFIG.BASE_URL}/user/activate?token=${activationToken}`;
+      const activationLink = `${APP_CONFIG.CLIENT_FRONTEND_BASE_URL}/auth/user/activate?token=${activationToken}`;
 
       const emailResponse = await emailService.sendEmailTemplate({
         subject: "Account Verification",

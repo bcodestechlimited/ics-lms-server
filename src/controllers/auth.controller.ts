@@ -40,7 +40,8 @@ class AuthController {
 
   // test: this service
   public async activateAccount(req: Request, res: Response) {
-    const {token} = req.query;
+    const {token} = req.body;
+    console.log({token});
     const serviceResponse = await authService.activateAccount(token as string);
 
     res.status(serviceResponse.statusCode).json(serviceResponse);
