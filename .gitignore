@@ -5,3 +5,5 @@ tmp
 /todo.txt
 /uploads
 /dist
+Dockerfile
+docker-compose.yml
