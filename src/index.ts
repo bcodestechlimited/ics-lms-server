@@ -42,6 +42,8 @@ app.use(
       "http://localhost:3000",
       "http://localhost:3001",
       "http://localhost:5173",
+      "https://ics-lms-web.vercel.app",
+      "https://ics-lms-admin-six.vercel.app",
     ],
     credentials: true,
   })
