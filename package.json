@@ -1,16 +1,21 @@
 {
-  "name": "nahco-lms",
-  "version": "1.0.0",
-  "description": "A backend for NACHCO LMS",
+  "name": "ics-lms",
+  "version": "1.1.0",
+  "description": "A backend for ICS LMS",
   "main": "src/index.ts",
   "author": "David Bodunrin",
   "license": "MIT",
   "scripts": {
-    "build": "npm install",
-    "start": "ts-node --transpile-only ./src/index.ts",
+    "build": "tsup",
+    "start": "node dist/index.js",
     "dev": "nodemon src/index.ts"
   },
-  "keywords": [],
+  "keywords": [
+    "ICS",
+    "LMS",
+    "learning manament system",
+    "certificate"
+  ],
   "dependencies": {
     "agenda": "^5.0.0",
     "axios": "^1.7.4",
@@ -75,6 +80,18 @@
     "@types/nodemailer": "^6.4.15",
     "@types/uuid": "^10.0.0",
     "nodemon": "^3.1.9",
+    "tsup": "^8.4.0",
     "typescript": "^5.5.4"
+  },
+  "tsup": {
+    "entry": [
+      "src"
+    ],
+    "splitting": false,
+    "sourcemap": true,
+    "clean": true,
+    "loader": {
+      ".hbs": "text"
+    }
   }
 }

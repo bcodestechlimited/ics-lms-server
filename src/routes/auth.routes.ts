@@ -18,7 +18,7 @@ import {
 
 
 const router = Router();
-
+console.log("the code is here");
 router
   .route("/")
   .get(isAuthenticated, authController.getSession)
@@ -26,7 +26,7 @@ router
 
 router.route("/students").get(userController.getAllUsers);
 
-router.get("/activate", authController.activateAccount);
+router.post("/activate-account", apiLimiter, authController.activateAccount);
 
 router.get("/me", isAuthenticated, userController.getMe);
 
