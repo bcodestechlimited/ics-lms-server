@@ -18,7 +18,6 @@ import {
 
 
 const router = Router();
-console.log("the code is here");
 router
   .route("/")
   .get(isAuthenticated, authController.getSession)

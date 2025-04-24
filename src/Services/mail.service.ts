@@ -1,23 +1,17 @@
 import "dotenv";
 import fs from "fs";
 import Handlebars from "handlebars";
-import {SendMailOptions} from "nodemailer";
+import { SendMailOptions } from "nodemailer";
 import path from "path";
-import {APP_CONFIG} from "../config/app.config";
-import {MAIL_SERVICE_SOCIAL_ICONS} from "../config/constant";
-import {EmailDataInterface} from "../interfaces";
+import { APP_CONFIG } from "../config/app.config";
+import { MAIL_SERVICE_SOCIAL_ICONS } from "../config/constant";
+import { EmailDataInterface } from "../interfaces";
 import SendEmail from "../utils/mail";
 
+console.log(`Dirname: ${__dirname}`);
+
 const baseTemplateSource = fs.readFileSync(
-  path.join(
-    __dirname,
-    "..",
-    "views/",
-    "templates",
-    process.env.NODE_ENV === "development"
-      ? "base_template.hbs"
-      : "base_template.js"
-  ),
+  path.join(__dirname, "..", "views/", "templates", "base_template.hbs"),
   "utf-8"
 );
 Handlebars.registerPartial("base_template", baseTemplateSource);
@@ -37,7 +31,7 @@ class EmailService {
       preferencesUrl: "",
       unsubscribe_url: "",
     };
-    const newData = {...data, ...variables};
+    const newData = { ...data, ...variables };
     const templateSource = fs.readFileSync(
       path.join(__dirname, "..", "views/", "templates", `${templateName}.hbs`),
       "utf-8"
@@ -58,7 +52,7 @@ class EmailService {
    * @throws {Error} - Throws an error if the email fails to send.
    */
   async sendEmailTemplate(
-    emailData: EmailDataInterface & {attachments?: any[]}
+    emailData: EmailDataInterface & { attachments?: any[] }
   ) {
     try {
       const html = this.renderTemplate(emailData.template, emailData.variables);
