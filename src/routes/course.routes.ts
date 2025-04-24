@@ -155,17 +155,17 @@ router
 router.route("/:id").get(apiLimiter, courseController.getCourseById);
 
 // bug: fix this code later
-router
-  .route("/")
-  .get((req, res) => {
-    res.send("The code is here");
-  })
-  .post(
-    isAuthenticated,
-    checkUserRole(["admin", "superadmin"]),
-    uploadFile,
-    courseController.uploadCourseController
-  );
+// router
+//   .route("/")
+//   .get((req, res) => {
+//     res.send("The code is here");
+//   })
+//   .post(
+//     isAuthenticated,
+//     checkUserRole(["admin", "superadmin"]),
+//     uploadFile,
+//     courseController.uploadCourseController
+//   );
 
 router
   .route("/:id")

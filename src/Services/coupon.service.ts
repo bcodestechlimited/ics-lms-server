@@ -1,6 +1,6 @@
 import {StatusCodes} from "http-status-codes";
 import mongoose, {FilterQuery} from "mongoose";
-import {customAlphabet} from "nanoid";
+import {v4 as uuidv4} from "uuid";
 import {UserType} from "../interfaces/auth.interface";
 import {
   CouponCheckoutInterface,
@@ -47,12 +47,9 @@ class CouponService {
   }
 
   private generateCouponCode(): string {
-    const nanoid = customAlphabet(
-      this.ALLOWED_COUPON_CHARS,
-      this.COUPON_LENGTH
-    );
-
-    return nanoid();
+    const raw = uuidv4().replace(/-/g, "");
+    // take only what you need
+    return raw.slice(0, this.COUPON_LENGTH).toUpperCase();
   }
 
   private addChecksum(code: string): string {
@@ -481,7 +478,8 @@ class CouponService {
 
       user.courseEnrollments.push({
         course: new mongoose.Types.ObjectId(courseId),
-        expiresAt: new Date("2999-12-31"), // Effectively never expires
+        expiresAt: new Date("2999-12-31"),
+        isAssigned: false,
       });
 
       // Add user to course participants if not already there
