@@ -9,15 +9,7 @@ import {EmailDataInterface} from "../interfaces";
 import SendEmail from "../utils/mail";
 
 const baseTemplateSource = fs.readFileSync(
-  path.join(
-    __dirname,
-    "..",
-    "views/",
-    "templates",
-    process.env.NODE_ENV === "development"
-      ? "base_template.hbs"
-      : "base_template.js"
-  ),
+  path.join(__dirname, "..", "views/", "templates", "base_template.hbs"),
   "utf-8"
 );
 Handlebars.registerPartial("base_template", baseTemplateSource);
