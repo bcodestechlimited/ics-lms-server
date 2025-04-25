@@ -50,6 +50,10 @@ const APP_CONFIG = Object.freeze({
   PURIFY_CONFIG: purifyConfig,
   CLIENT_FRONTEND_BASE_URL: process.env.CLIENT_FRONTEND_BASE_URL,
   SUPPORT_EMAIL: process.env.SUPPORT_EMAIL,
+  COMPANY_NAME: process.env.COMPANY_NAME || "ICS OUTSOURCING",
+  LOGO_URL: process.env.LOGO_URL,
 } as const);
+
+
 
 export {APP_CONFIG};

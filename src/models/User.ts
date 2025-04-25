@@ -308,7 +308,9 @@ UserSchema.methods.generatePasswordResetToken = function () {
   const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
 
   this.passwordResetToken = hashedToken;
-  this.passwordResetTokenExpires = Date.now() + 10 * 60 * 1000;
+  this.passwordResetTokenExpires = Date.now() + 20 * 60 * 1000;
+
+  console.log("this.user", this);
 
   return token;
 };
@@ -320,6 +322,7 @@ UserSchema.methods.generateEmailInvitationToken = function () {
   this.emailInvitationToken = hashedToken;
   this.emailInvitationStatus = EmailInvitationEnum.PENDING;
   this.staffEmailInvitationSentAt = new Date();
+
 
   return token;
 };

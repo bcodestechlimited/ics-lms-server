@@ -182,7 +182,7 @@ class AuthService {
     }
   }
 
-  // todo: test this endpoint
+  // test: test this endpoint
   public async forgotPassword(email: string, resetUrl: string) {
     try {
       const user = await User.findOne({email}).populate("passwordVersion");
@@ -194,21 +194,23 @@ class AuthService {
         );
       }
 
-      const payload = {
-        userId: user.id.toString(),
-        passwordVersion: user.passwordVersion,
-      };
       const token = user.generatePasswordResetToken();
+      console.log("token", token);
+      await user.save();
+      console.log("user", user);
       const emailPayload = {
         subject: "Password Reset",
         template: "reset-password",
         to: user.email,
         variables: {
-          passwordResetUrl: `${resetUrl}?token=${token}`,
+          resetPasswordUrl: `${resetUrl}?token=${token}`,
+          userName: user.firstName,
+          companyName: APP_CONFIG.COMPANY_NAME,
         },
       };
 
       const emailResponse = await emailService.sendEmailTemplate(emailPayload);
+
       if (emailResponse.status !== "ok") {
         return ServiceResponse.failure(
           "Error sending mail, Try again!",
@@ -233,17 +235,33 @@ class AuthService {
 
   public async resetPassword(token: string, password: string) {
     try {
-      const hashedToken = crypto.createHash("sha256");
+      const hashedToken = crypto
+        .createHash("sha256")
+        .update(token)
+        .digest("hex");
+
       const user = await User.findOne({
         passwordResetToken: hashedToken,
         passwordResetTokenExpires: {$gt: Date.now()},
-      });
+      }).select("+passwordVersion");
       if (!user) {
-        return ServiceResponse.failure(
-          "Token is invalid or has expired",
-          null,
-          StatusCodes.BAD_REQUEST
-        );
+        const expiredUser = await User.findOne({
+          passwordResetToken: hashedToken,
+        });
+
+        if (expiredUser) {
+          return ServiceResponse.failure(
+            "Token has expired. Please request a new password reset link.",
+            null,
+            StatusCodes.BAD_REQUEST
+          );
+        } else {
+          return ServiceResponse.failure(
+            "Invalid token. Please request a new password reset link.",
+            null,
+            StatusCodes.BAD_REQUEST
+          );
+        }
       }
 
       const passwordHash = await bcrypt.hash(password, 10);
@@ -260,6 +278,21 @@ class AuthService {
         role: user.role,
         email: user.email,
       };
+
+      const emailPayload = {
+        subject: "Your password has been changed",
+        template: "password-changed",
+        to: user.email,
+        variables: {
+          userName: user.firstName,
+          companyName: APP_CONFIG.COMPANY_NAME,
+          logoUrl: APP_CONFIG.LOGO_URL,
+          supportUrl: APP_CONFIG.SUPPORT_EMAIL,
+          loginUrl: `${APP_CONFIG.CLIENT_FRONTEND_BASE_URL}/auth/login`,
+        },
+      };
+
+      await emailService.sendEmailTemplate(emailPayload);
 
       return ServiceResponse.success(
         "Password reset successfully",

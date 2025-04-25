@@ -3,6 +3,7 @@ import {NextFunction, Request, Response} from "express";
 import {authService} from "../Services/auth.service";
 import {ExtendedRequest} from "../interfaces/auth.interface";
 import {StatusCodes} from "http-status-codes";
+import {APP_CONFIG} from "../config/app.config";
 
 class AuthController {
   // test: this service
@@ -41,7 +42,6 @@ class AuthController {
   // test: this service
   public async activateAccount(req: Request, res: Response) {
     const {token} = req.body;
-    console.log({token});
     const serviceResponse = await authService.activateAccount(token as string);
 
     res.status(serviceResponse.statusCode).json(serviceResponse);
@@ -55,14 +55,20 @@ class AuthController {
   // test: this service
   public async forgotPassword(req: Request, res: Response) {
     const {email} = req.body;
-    const resetUrl = `${req.protocol}://${req.get(
-      "host"
-    )}/api/v1/reset-password`;
+    const resetUrl = `${APP_CONFIG.CLIENT_FRONTEND_BASE_URL}/auth/reset-password`;
     const serviceResponse = await authService.forgotPassword(email, resetUrl);
+
+    res.status(serviceResponse.statusCode).json(serviceResponse);
   }
 
   // test: this service
-  public async resetPassword() {}
+  public async resetPassword(req: Request, res: Response) {
+    const {token, newPassword} = req.body;
+    console.log(token, newPassword);
+    const serviceResponse = await authService.resetPassword(token, newPassword);
+
+    res.status(serviceResponse.statusCode).json(serviceResponse);
+  }
 
   // test: this service
   public async updatePassword(

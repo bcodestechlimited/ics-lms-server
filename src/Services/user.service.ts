@@ -1,7 +1,7 @@
 import {StatusCodes} from "http-status-codes";
 import mongoose from "mongoose";
 import {UserCourseExtensionPayloadInterface} from "../interfaces/user.interface";
-import User from "../models/User";
+import User, {UserRole} from "../models/User";
 import UserCourseExtensionRequest from "../models/user-request.model";
 import {ServiceResponse} from "../utils/service-response";
 import {courseService} from "./course.service";
@@ -24,9 +24,9 @@ class UserService {
 
   async fetchAllStudents() {
     const students = await User.find({
-      role: {$nin: ["admin", "superadmin"]},
+      role: {$nin: [UserRole.ADMIN, UserRole.SUPERADMIN]},
       isAdmin: false,
-      privilege: {$nin: ["admin", "superadmin"]},
+      privilege: {$nin: [UserRole.ADMIN, UserRole.SUPERADMIN]},
     });
 
     return students;
