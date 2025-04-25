@@ -1,5 +1,15 @@
 import {z} from "zod";
 
+const PasswordSchema = z
+  .string()
+  .min(6, {message: "Password must be atleast 6 characters long"})
+  .refine((value) => /[!@#$%^&*(),.?":{}|<>]/.test(value), {
+    message: "Password must contain at least one special character",
+  })
+  .refine((value) => /\d/.test(value), {
+    message: "Password must contain at least one number",
+  });
+
 export const RegisterSchema = z.object({
   email: z.string({message: "Email is required"}).email("Invalid email format"),
   telephone: z
@@ -43,4 +53,9 @@ export const UserRequestForCourseExtensionSchema = z.object({
     .number({message: "Days is required"})
     .min(1, "Must request at least 1 day"),
   expiryDate: z.string(),
+});
+
+export const ResetPasswordSchema = z.object({
+  newPassword: PasswordSchema,
+  token: z.string(),
 });

@@ -11,7 +11,7 @@ import morgan from "morgan";
 import morganBody from "morgan-body";
 import NodeCache from "node-cache";
 import path from "path";
-import connectDB from "./Middlewares/Db.ts";
+import connectDB, {seedAdmin} from "./Middlewares/Db.ts";
 import errorHandler from "./Middlewares/error-handler.ts";
 import UserRoute from "./routes/auth.routes.ts";
 import BCTCourseRoute from "./routes/bct-course.routes.ts";

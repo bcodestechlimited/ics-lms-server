@@ -12,10 +12,10 @@ import validateRequest from "../Middlewares/validation.middleware.ts";
 import {
   OnboardStaffSchema,
   RegisterSchema,
+  ResetPasswordSchema,
   UpdatePasswordSchema,
   UserRequestForCourseExtensionSchema,
 } from "../Schema/auth.schema.ts";
-
 
 const router = Router();
 router
@@ -28,6 +28,15 @@ router.route("/students").get(userController.getAllUsers);
 router.post("/activate-account", apiLimiter, authController.activateAccount);
 
 router.get("/me", isAuthenticated, userController.getMe);
+
+router.post("/forgot-password", apiLimiter, authController.forgotPassword);
+
+router.post(
+  "/reset-password",
+  apiLimiter,
+  validateRequest(ResetPasswordSchema),
+  authController.resetPassword
+);
 
 router.get(
   "/my-enrolled-courses",

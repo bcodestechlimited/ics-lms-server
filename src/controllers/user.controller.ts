@@ -207,9 +207,6 @@ class UserController {
   }
 
   public async getUserExpiredCourses(req: ExtendedRequest, res: Response) {
-    if (!req.user) {
-      res.status(StatusCodes.UNAUTHORIZED).json({message: "Unauthorized"});
-    }
     const serviceResponse = await userService.getUserExpiredCourses(
       req.user?._id
     );

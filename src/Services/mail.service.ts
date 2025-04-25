@@ -8,8 +8,6 @@ import { MAIL_SERVICE_SOCIAL_ICONS } from "../config/constant";
 import { EmailDataInterface } from "../interfaces";
 import SendEmail from "../utils/mail";
 
-console.log(`Dirname: ${__dirname}`);
-
 const baseTemplateSource = fs.readFileSync(
   path.join(__dirname, "..", "views/", "templates", "base_template.hbs"),
   "utf-8"
@@ -22,10 +20,10 @@ Handlebars.registerPartial("base_template", baseTemplateSource);
 class EmailService {
   renderTemplate(templateName: string, variables: {}) {
     const data = {
-      logoUrl: "https://www.imghippo.com/i/DwmC5793Voo.png",
-      imageUrl: "https://www.imghippo.com/i/DwmC5793Voo.png",
+      logoUrl: "https://www.imghippo.com/i/tKsT5878Mhc.png",
+      imageUrl: "https://www.imghippo.com/i/tKsT5878Mhc.png",
       companyName: "ICS ACADEMY",
-      supportUrl: "",
+      supportUrl: APP_CONFIG.SUPPORT_EMAIL,
       socialIcons: MAIL_SERVICE_SOCIAL_ICONS,
       companyWebsite: "https://",
       preferencesUrl: "",
