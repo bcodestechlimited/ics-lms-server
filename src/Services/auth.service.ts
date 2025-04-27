@@ -195,9 +195,8 @@ class AuthService {
       }
 
       const token = user.generatePasswordResetToken();
-      console.log("token", token);
-      await user.save();
-      console.log("user", user);
+     
+      await user.save();     
       const emailPayload = {
         subject: "Password Reset",
         template: "reset-password",

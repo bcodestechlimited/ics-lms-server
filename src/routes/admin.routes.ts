@@ -18,13 +18,6 @@ router.post(
   adminController.uploadCertificateTemplate
 );
 
-// test: this endpoint
-router.post(
-  "/send-certificate",
-  isAuthenticated,
-  checkUserRole(["admin", "superamdin"]),
-  certificateController.sendCompletionCertificate
-);
 
 router.get(
   "/user-request-for-course-extension",
@@ -47,6 +40,13 @@ router.patch(
   isAuthenticated,
   checkUserRole(["admin", "superadmin"]),
   adminController.handleRejectUserRequestForCourseExtension
+);
+
+router.post(
+  "/test-issue-certificate",
+  isAuthenticated,
+  checkUserRole(["admin", "superadmin"]),
+  certificateController.testIssueCertificate
 );
 
 export default router;

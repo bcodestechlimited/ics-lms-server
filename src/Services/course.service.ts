@@ -260,6 +260,20 @@ class CourseService {
     };
   }
 
+  // test this service
+
+  /**
+   * 
+   * @param userId 
+   * @param courseId 
+   * @param answers 
+   * @returns 
+   * 
+   * const questions = await CourseAssessment
+  .find({ courseId })
+  .select('+options.isCorrect');    // <— this pulls in isCorrect
+
+   */
   public async submitCourseAssessment(
     userId: string,
     courseId: string,
@@ -269,7 +283,10 @@ class CourseService {
     session.startTransaction();
 
     try {
-      const questions = await CourseAssessment.find({courseId});
+      const questions = await CourseAssessment.find({courseId}).select(
+        "+options.isCorrect"
+      );
+      // console.log("questions", questions);
       if (!questions.length) {
         await session.abortTransaction();
         return ServiceResponse.failure(
@@ -311,8 +328,9 @@ class CourseService {
 
         return {
           questionId: new mongoose.Types.ObjectId(question._id),
-          selectedOptionId: userAnswer?.selectedOptionId || -1,
+          selectedOptionId: userAnswer?.selectedOptionId ?? -1,
           isCorrect: userAnswer?.selectedOptionId === correctOption?.id,
+          correctOptionId: correctOption,
         };
       });
 
@@ -336,17 +354,20 @@ class CourseService {
           questionId: a.questionId,
           selectedOptionId: a.selectedOptionId,
           isCorrect: a.isCorrect,
+          correctOptionId: a.correctOptionId,
         })),
       });
 
       progress.assessmentAttempts = currentAttempt;
       progress.score = scorePercent;
 
+      console.log({passed});
+      console.log({progress});
       if (passed) {
         progress.status = CourseStatusEnum.COMPLETED;
         progress.completedAt = new Date();
         if (!progress.certificateIssued) {
-          await certificateService.issueCertificate(userId, courseId, session);
+          await certificateService.issueCertificate(userId, courseId);
           progress.certificateIssued = true;
         }
       } else if (isFinalAttempt) {
@@ -360,9 +381,7 @@ class CourseService {
       const corrections = isFinalAttempt
         ? validatedAnswers.map((a) => ({
             questionId: a.questionId.toString(),
-            correctOption: questions
-              .find((q) => q._id.toString() === a.questionId.toString())
-              ?.options.find((o) => o.isCorrect)?.id,
+            correctOption: a.correctOptionId,
             userSelected: a.selectedOptionId,
             isCorrect: a.isCorrect,
           }))
@@ -383,6 +402,7 @@ class CourseService {
         StatusCodes.OK
       );
     } catch (error) {
+      console.log("error", error);
       await session.abortTransaction();
       return ServiceResponse.failure(
         "Internal Server Error",

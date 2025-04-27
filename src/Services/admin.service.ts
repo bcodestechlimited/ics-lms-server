@@ -16,7 +16,7 @@ import {emailService} from "./mail.service";
 import {UploadedFile} from "express-fileupload";
 import path from "path";
 import fs from "fs";
-import SignatureModel from "../models/certificate-template.model";
+import CertificateTemplateModel from "../models/certificate-template.model";
 
 class AdminService {
   // test : this service
@@ -93,6 +93,7 @@ class AdminService {
       const newEnrollment = {
         course: new mongoose.Types.ObjectId(extensionRequest.course),
         expiresAt: newExpiry,
+        isAssigned: true,
       };
 
       user.expiredCourses.splice(expiredCourseIndex, 1);
@@ -111,7 +112,6 @@ class AdminService {
         $addToSet: {participants: extensionRequest.user},
       });
 
-      // idea: send email
       await emailService.sendEmailTemplate({
         subject: "Course Extension Request Accepted",
         template: "",
@@ -218,35 +218,54 @@ class AdminService {
 
   public async uploadCertificateTemplate(payload: UploadedFile) {
     try {
-      const uploadDir = path.resolve(__dirname, "../../uploads/signature");
+      const uploadDir = path.resolve(__dirname, "../../uploads/certificate");
       fs.mkdirSync(uploadDir, {recursive: true});
 
-      const filename = `${Date.now()}_${payload.name}`;
+      const fileExtension = path.extname(payload.name);
+      const filename = `certificate_template_${Date.now()}${fileExtension}`;
       const filePath = path.join(uploadDir, filename);
-      await payload.mv(filePath);
 
-      const updated = await SignatureModel.findOneAndUpdate(
+      const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+      if (payload.size > MAX_FILE_SIZE) {
+        return ServiceResponse.failure(
+          "File size exceeds 5MB limit",
+          null,
+          StatusCodes.BAD_REQUEST
+        );
+      }
+
+      await payload.mv(filePath);
+      const relativePath = path.join("uploads/certificate", filename);
+
+      const updated = await CertificateTemplateModel.findOneAndUpdate(
         {},
-        {path: filePath, originalName: payload.name, updatedAt: new Date()},
+        {
+          path: relativePath,
+          originalName: payload.name,
+          fileType: payload.mimetype,
+          fileSize: payload.size,
+          updatedAt: new Date(),
+        },
         {upsert: true, new: true}
       );
 
       if (!updated) {
         return ServiceResponse.failure(
-          "Bad Request",
+          "Failed to update certificate template record",
           null,
           StatusCodes.BAD_REQUEST
         );
       }
 
       return ServiceResponse.success(
-        "Signature uploaded successfully",
+        "Certificate template uploaded successfully",
         updated,
         StatusCodes.CREATED
       );
     } catch (error) {
+      console.error("Certificate template upload error:", error);
       return ServiceResponse.failure(
-        "Internal Server Error",
+        "Failed to upload certificate template",
         null,
         StatusCodes.INTERNAL_SERVER_ERROR
       );

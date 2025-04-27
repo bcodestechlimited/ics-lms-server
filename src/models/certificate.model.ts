@@ -1,29 +1,26 @@
-import mongoose, { Schema } from "mongoose";
-import { Document } from "mongoose";
+import {Document, Schema, model, Types} from "mongoose";
 
-interface ICertificate extends Document {
-  userName: string;
-  courseTitle: string;
-  // cloudinaryId: string;
-  cloudinaryUrl: string;
+export interface ICertificate extends Document {
+  userId: Types.ObjectId;
+  courseId: Types.ObjectId;
+  path: string;
+  fileName: string;
+  issuedAt: Date;
   createdAt: Date;
 }
 
-const certificateSchema = new Schema<ICertificate>(
+const CertificateSchema = new Schema<ICertificate>(
   {
-    userName: { type: String, required: true },
-    courseTitle: { type: String, required: true },
-    // cloudinaryId: { type: String, required: true },
-    cloudinaryUrl: { type: String, required: true },
+    userId: {type: Schema.Types.ObjectId, ref: "User", required: true},
+    courseId: {type: Schema.Types.ObjectId, ref: "Course", required: true},
+    path: {type: String, required: true},
+    fileName: {type: String, required: true},
+    issuedAt: {type: Date, default: Date.now},
   },
-  {
-    timestamps: true,
-  }
+  {timestamps: true}
 );
 
-const CourseCertificateModel = mongoose.model<ICertificate>(
-  "CourseCertificate",
-  certificateSchema
-);
+// Create a compound index to ensure uniqueness per user and course
+CertificateSchema.index({userId: 1, courseId: 1}, {unique: true});
 
-export default CourseCertificateModel;
+export default model<ICertificate>("Certificate", CertificateSchema);
