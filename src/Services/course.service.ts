@@ -29,7 +29,7 @@ import {APP_CONFIG} from "../config/app.config";
 import {certificateService} from "./certificate.service";
 
 class CourseService {
-  async fetchAllPublishedCourse({options, query}: CourseQueryOptions) {
+  public async fetchAllPublishedCourse({options, query}: CourseQueryOptions) {
     const courses = await Course.paginate(query, options);
     return courses;
   }
@@ -44,7 +44,7 @@ class CourseService {
    * @throws Will throw an error if the course creation fails.
    */
 
-  async createNewCourse(payload: CreateCourseInterface) {
+  public async createNewCourse(payload: CreateCourseInterface) {
     try {
       const course = await Course.create({
         title: payload.courseTitle,
@@ -79,7 +79,7 @@ class CourseService {
    * @throws Will throw an error if the insertion fails.
    */
 
-  async createCourseAssessment(payload: CreateAssessmentInterface) {
+  public async createCourseAssessment(payload: CreateAssessmentInterface) {
     try {
       const response = await CourseAssessment.insertMany(
         payload.questions.map((q) => {
@@ -111,7 +111,7 @@ class CourseService {
    *
    * @throws Will throw an error if the benchmark creation fails.
    */
-  async createCourseBenchmark(payload: CreateBenchmarkInterface) {
+  public async createCourseBenchmark(payload: CreateBenchmarkInterface) {
     try {
       const response = await CourseBenchmark.create(payload);
       return {
@@ -122,7 +122,7 @@ class CourseService {
     }
   }
 
-  async getCourseModules(id: string) {
+  public async getCourseModules(id: string) {
     const course = await Course.findById({_id: id}).populate("course_modules");
 
     if (!course) {
@@ -154,7 +154,7 @@ class CourseService {
     }
   }
 
-  async publishCourse(courseId: string) {
+  public async publishCourse(courseId: string) {
     const course = await Course.findById({_id: courseId});
     if (!course) {
       return {
@@ -170,7 +170,7 @@ class CourseService {
     };
   }
 
-  async fetchCourseById(
+  public async fetchCourseById(
     courseId: string | mongoose.Types.ObjectId,
     userRole: string | undefined
   ) {
@@ -204,7 +204,7 @@ class CourseService {
     }
   }
 
-  async fetchAllAdminCourses({options, query}: CourseQueryOptions) {
+  public async fetchAllAdminCourses({options, query}: CourseQueryOptions) {
     const course = await Course.paginate(query, options);
 
     return {
@@ -214,7 +214,7 @@ class CourseService {
     };
   }
 
-  async updateCourse(courseId: string, payload: Record<string, any>) {
+  public async updateCourse(courseId: string, payload: Record<string, any>) {
     const course = await Course.findByIdAndUpdate(courseId, payload, {
       new: true,
     });
@@ -232,7 +232,7 @@ class CourseService {
     };
   }
 
-  async updateCourseBenchmark(
+  public async updateCourseBenchmark(
     payload: {retakes: number; benchmark: number},
     id: string
   ) {
@@ -361,8 +361,6 @@ class CourseService {
       progress.assessmentAttempts = currentAttempt;
       progress.score = scorePercent;
 
-      console.log({passed});
-      console.log({progress});
       if (passed) {
         progress.status = CourseStatusEnum.COMPLETED;
         progress.completedAt = new Date();

@@ -182,7 +182,6 @@ class AuthService {
     }
   }
 
-  // test: test this endpoint
   public async forgotPassword(email: string, resetUrl: string) {
     try {
       const user = await User.findOne({email}).populate("passwordVersion");

@@ -226,6 +226,19 @@ class UserController {
 
     res.status(response.statusCode).json(response);
   }
+
+  public async getMyCertificates(req: ExtendedRequest, res: Response){
+     const {page = 1, limit = 10, sort = "issuedAt"} = req.query;
+    const userId = req.user?._id;
+
+     const response = await userService.fetchMyCertificates(userId, {
+       page: Number(page),
+       limit: Number(limit),
+       sort: {[sort as string]: -1},
+     });
+
+    res.status(response.statusCode).json(response);
+  }
 }
 
 export const userController = new UserController();
