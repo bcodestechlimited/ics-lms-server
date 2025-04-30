@@ -5,6 +5,7 @@ import {userController} from "../controllers/user.controller.ts";
 import {
   checkUserRole,
   isAuthenticated,
+  isLocalAuthenticated,
   validateUser,
 } from "../Middlewares/Auth.ts";
 import {apiLimiter} from "../Middlewares/RateLimiter.ts";
@@ -93,7 +94,7 @@ router.put(
 
 router.route("/login").post(authController.login);
 
-router.get("/session", isAuthenticated, authController.getSession);
+router.get("/session", isLocalAuthenticated, authController.getSession);
 router.get("/validate-user", isAuthenticated, validateUser);
 
 router.get(

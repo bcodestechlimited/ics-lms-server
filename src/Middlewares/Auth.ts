@@ -15,6 +15,68 @@ export const validateUser = async (req: ExtendedRequest, res: Response) => {
   }
 };
 
+export const isLocalAuthenticated = async (
+  req: ExtendedRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    let token: string | null = null;
+
+    console.log("the code is here in the local storage authenticator");
+    if (
+      req.headers.authorization &&
+      req.headers.authorization.startsWith("Bearer")
+    ) {
+      token = req.headers.authorization.split("Bearer ")[1];
+    }
+
+    if (!token) {
+      return res.status(401).json({
+        message: "Unauthorized! Login to access this resource",
+      });
+    }
+
+    const decoded = verifyUserAccessToken(token);
+    if (!decoded) {
+      return res
+        .status(401)
+        .json({message: "Unauthorized, Login to access resource"});
+    }
+
+    const user = await User.findById(decoded.id);
+    if (!user) {
+      return res.status(404).json({message: "User not found", success: false});
+    }
+
+    if (decoded.passwordVersion !== user.passwordVersion) {
+      return res.status(403).json({
+        message: "Password changed recently, login again to access resource",
+        success: false,
+      });
+    }
+
+    const userResponse = user.toObject();
+    const userObj: LocalUserType = {
+      _id: userResponse._id,
+      firstName: userResponse.firstName,
+      lastName: userResponse.lastName,
+      email: userResponse.email,
+      role: userResponse.role as string,
+      isAdmin: userResponse.isAdmin,
+      isEmailVerified: userResponse.isEmailVerified,
+    };
+
+    req.user = userObj;
+    next();
+  } catch (error) {
+    console.error("Authentication error", error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      message: "Internal Server Error",
+    });
+  }
+};
+
 export const isAuthenticated = async (
   req: ExtendedRequest,
   res: Response,
@@ -25,6 +87,7 @@ export const isAuthenticated = async (
 
     if (req.cookies?.accessToken) {
       token = req.cookies.accessToken;
+
     } else if (
       req.headers.authorization &&
       req.headers.authorization.startsWith("Bearer ")
