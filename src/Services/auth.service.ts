@@ -194,8 +194,8 @@ class AuthService {
       }
 
       const token = user.generatePasswordResetToken();
-     
-      await user.save();     
+
+      await user.save();
       const emailPayload = {
         subject: "Password Reset",
         template: "reset-password",
@@ -434,6 +434,11 @@ class AuthService {
         StatusCodes.INTERNAL_SERVER_ERROR
       );
     }
+  }
+
+  public async checkifUserExists(email: string){
+    const user = await User.findOne({email})
+    return user
   }
 }
 

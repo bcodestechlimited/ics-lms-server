@@ -1,9 +1,9 @@
 import "dotenv/config";
 import {NextFunction, Request, Response} from "express";
-import {authService} from "../Services/auth.service";
-import {ExtendedRequest} from "../interfaces/auth.interface";
 import {StatusCodes} from "http-status-codes";
+import {authService} from "../Services/auth.service";
 import {APP_CONFIG} from "../config/app.config";
+import {ExtendedRequest} from "../interfaces/auth.interface";
 
 class AuthController {
   public async login(req: Request, res: Response, next: NextFunction) {
@@ -26,6 +26,12 @@ class AuthController {
 
   public async register(req: Request, res: Response, next: NextFunction) {
     const {email, telephone, firstName, lastName, password} = req.body;
+    const checkIfUserExists = await authService.checkifUserExists(email);
+    if (checkIfUserExists) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({message: "User account exists!. Please login."});
+    }
     const serviceResponse = await authService.register({
       email,
       telephone,
