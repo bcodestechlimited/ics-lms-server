@@ -5,6 +5,7 @@ import User, {UserRole} from "../models/User";
 import UserCourseExtensionRequest from "../models/user-request.model";
 import {ServiceResponse} from "../utils/service-response";
 import {courseService} from "./course.service";
+import {certificateService} from "./certificate.service";
 
 class UserService {
   async getMe(id: string) {
@@ -22,7 +23,8 @@ class UserService {
     };
   }
 
-  async fetchAllStudents() {
+  // todo: handle pagination
+  public async fetchAllStudents() {
     const students = await User.find({
       role: {$nin: [UserRole.ADMIN, UserRole.SUPERADMIN]},
       isAdmin: false,
@@ -32,7 +34,8 @@ class UserService {
     return students;
   }
 
-  async fetchAllUsersIssuedCertificates() {
+  // refactor: remove this code
+  public async fetchAllUsersIssuedCertificates() {
     const users = await User.find({certificates: {$exists: true, $ne: []}});
 
     if (!users) {
@@ -48,7 +51,7 @@ class UserService {
     };
   }
 
-  async fetchUserById(id: string) {
+  public async fetchUserById(id: string) {
     const user = await User.findById(id)
       .populate({
         path: "progress",
@@ -71,7 +74,7 @@ class UserService {
     };
   }
 
-  async fetchCourseAnalytics(id: string) {
+  public async fetchCourseAnalytics(id: string) {
     const stats = await User.aggregate([
       {$match: {_id: new mongoose.Types.ObjectId(id)}},
       {
@@ -238,6 +241,36 @@ class UserService {
       return ServiceResponse.success(
         "Success",
         {data: userCourses},
+        StatusCodes.OK
+      );
+    } catch (error) {
+      return ServiceResponse.failure(
+        "Internal Server Error",
+        null,
+        StatusCodes.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  public async fetchMyCertificates(
+    userId: string,
+    options: {page: number; limit: number; sort?: any}
+  ) {
+    try {
+      const myCertificates = await certificateService.fetchCertificatesByUserId(
+        {userId, options}
+      );
+      if (!myCertificates || myCertificates.data.length === 0) {
+        return ServiceResponse.failure(
+          "No certificates found",
+          null,
+          StatusCodes.NOT_FOUND
+        );
+      }
+
+      return ServiceResponse.success(
+        "Fetched my certificates",
+        myCertificates,
         StatusCodes.OK
       );
     } catch (error) {

@@ -1,17 +1,14 @@
 import fs from "fs/promises";
 import {StatusCodes} from "http-status-codes";
 import path from "path";
-import {PDFDocument, rgb, StandardFonts} from "pdf-lib";
-import puppeteer from "puppeteer";
-import {v4 as uuidv4} from "uuid";
+import {PDFDocument} from "pdf-lib";
+import {CertificateQueryOptions} from "../interfaces/certificate.interface";
 import CertificateTemplate from "../models/certificate-template.model";
-import CourseCertificateModel from "../models/certificate.model";
-import Course from "../models/Course";
-import User from "../models/User";
-import {uploadToCloudinary} from "../utils/cloudinary.utils";
-import {ServiceResponse} from "../utils/service-response";
-import CourseCompletion from "../models/course-completion.model";
 import Certificate from "../models/certificate.model";
+import Course from "../models/Course";
+import CourseCompletion from "../models/course-completion.model";
+import User from "../models/User";
+import {ServiceResponse} from "../utils/service-response";
 import {emailService} from "./mail.service";
 
 const UPLOAD_ROOT = path.join(process.cwd(), "uploads");
@@ -201,89 +198,6 @@ class CertificateService {
     }
   }
 
-  /** 
-   *   public async generatePDF(
-    studentName: string,
-    courseTitle: string,
-    issueDate: string
-  ) {
-    try {
-      const templatePath = await this.getTemplatePath();
-
-   
-      let templateBytes;
-      try {
-        templateBytes = await fs.readFile(templatePath);
-      } catch (error) {
-        console.error("Error reading certificate template:", error);
-        throw new Error("Failed to read certificate template");
-      }
-
-     
-      const uint8Array = new Uint8Array(templateBytes);
-
-    
-      let pdfDoc;
-      try {
-        pdfDoc = await PDFDocument.load(uint8Array);
-      } catch (error) {
-        console.error("Error loading PDF document:", error);
-        throw new Error("Failed to load certificate template as PDF");
-      }
-
-     
-      const page = pdfDoc.getPages()[0];
-      const {width, height} = page.getSize();
-
-  
-      let font;
-      try {
-        font = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-      } catch (error) {
-        console.error("Error embedding font:", error);
-        throw new Error("Failed to embed font in certificate");
-      }
-
-    
-      const nameWidth = font.widthOfTextAtSize(studentName, 26);
-      const courseWidth = font.widthOfTextAtSize(courseTitle, 20);
-      const dateWidth = font.widthOfTextAtSize(issueDate, 16);
-
-   
-      page.drawText(studentName, {
-        x: (width - nameWidth) / 2,
-        y: height - 180,
-        size: 26,
-        font,
-        color: rgb(0, 0, 0),
-      });
-
-      page.drawText(courseTitle, {
-        x: (width - courseWidth) / 2,
-        y: height - 240,
-        size: 20,
-        font,
-        color: rgb(0, 0, 0),
-      });
-
-      page.drawText(issueDate, {
-        x: (width - dateWidth) / 2,
-        y: height - 300,
-        size: 16,
-        font,
-        color: rgb(0, 0, 0),
-      });
-
-     
-      const pdfBytes = await pdfDoc.save();
-      return Buffer.from(pdfBytes);
-    } catch (error) {
-      console.error("Certificate generation error:", error);
-      throw new Error("Failed to generate certificate");
-    }
-  }
-  */
-
   public async generatePDF(
     studentName: string,
     courseTitle: string,
@@ -331,6 +245,90 @@ class CertificateService {
       console.error("Error fetching certificate template:", error);
       throw new Error("Failed to retrieve certificate template");
     }
+  }
+
+  public async fetchStudentsWithIssuedCertificate({
+    options,
+    query,
+  }: CertificateQueryOptions) {
+    try {
+      const certificates = await Certificate.paginate(query, {
+        page: options.page,
+        limit: options.limit,
+        sort: options.sort,
+        populate: [
+          {path: "userId", select: "firstName lastName email"},
+          {path: "courseId", select: "title"},
+        ],
+        lean: true,
+      });
+
+      const meta = {
+        total: certificates.totalDocs,
+        limit: certificates.limit,
+        page: certificates.page,
+        pages: certificates.totalPages,
+        hasNextPage: certificates.hasNextPage,
+        hasPrevPage: certificates.hasPrevPage,
+        nextPage: certificates.nextPage,
+        prevPage: certificates.prevPage,
+      };
+
+      return ServiceResponse.success(
+        "Fetched all student with issued certificate",
+        {data: certificates.docs, meta},
+        StatusCodes.OK
+      );
+    } catch (error) {
+      return ServiceResponse.failure(
+        "An error occurred while fetching certificate",
+        null,
+        StatusCodes.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  public async fetchCertificatesByUserId({
+    userId,
+    options,
+  }: {
+    userId: string;
+    options: {
+      page: number;
+      limit: number;
+      sort?: any;
+    };
+  }) {
+    const query = {userId};
+    const certificates = await Certificate.paginate(query, {
+      page: options.page,
+      limit: options.limit,
+      sort: options.sort || {issuedAt: -1},
+      populate: {
+        path: "courseId",
+        select: "title image",
+      },
+      lean: true,
+    });
+
+    return {
+      data: certificates.docs.map((certificate) => ({
+        _id: certificate._id,
+        course_title: certificate.courseId?.title as unknown as string,
+        course_image: certificate.courseId?.image as unknown as string,
+        issuedAt: certificate.issuedAt,
+      })),
+      meta: {
+        total: certificates.totalDocs,
+        limit: certificates.limit,
+        page: certificates.page,
+        pages: certificates.totalPages,
+        hasNextPage: certificates.hasNextPage,
+        hasPrevPage: certificates.hasPrevPage,
+        nextPage: certificates.nextPage,
+        prevPage: certificates.prevPage,
+      },
+    };
   }
 }
 

@@ -16,10 +16,17 @@ import {bulkAssignCourseSchema} from "../Schema/course.schema";
 import {CourseService} from "../Services/course.service";
 import {uploadToCloudinary} from "../utils/cloudinary.utils";
 import {ServiceResponse} from "../utils/service-response";
+import {FileArray, UploadedFile} from "express-fileupload";
 
 const courseService = new CourseService();
 const window = new JSDOM("").window;
 const domPurify = createDOMPurify(window);
+
+export type RequestWithCourseImage = Request & {
+  files: FileArray & {
+    courseImage: UploadedFile | UploadedFile[];
+  };
+};
 
 class CourseController {
   async getAllPublishedController(req: Request, res: Response) {
@@ -141,8 +148,10 @@ class CourseController {
     }
   }
 
-  async uploadCourseController(req: Request, res: Response) {
+  async uploadCourseController(r, res: Response) {
     try {
+      const req = r as RequestWithCourseImage;
+
       const {
         courseTitle,
         courseDescription,
@@ -150,10 +159,27 @@ class CourseController {
         courseCategory,
         skillLevel,
       } = req.body;
-      if (!req.file) {
+
+      if (!req.files || !req.files?.courseImage) {
         return res
           .status(400)
           .json({message: "No file uploaded", success: false});
+      }
+
+      const rawImage = req.files.courseImage;
+
+      const courseImage: UploadedFile = Array.isArray(rawImage)
+        ? rawImage[0]
+        : rawImage;
+
+      const fileTypes = /jpeg|jpg|png|gif|webp/;
+      const mimeType = fileTypes.test(courseImage.mimetype);
+
+      if (!mimeType) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid file type. Please upload an image file",
+        });
       }
 
       const sanitizedCourseDescription = domPurify.sanitize(
@@ -161,7 +187,9 @@ class CourseController {
         APP_CONFIG.PURIFY_CONFIG
       );
 
-      const cloudinary_image = await uploadToCloudinary(req.file.path, {
+      const tempFilePath = courseImage.tempFilePath;
+
+      const cloudinary_image = await uploadToCloudinary(tempFilePath, {
         folderName: "LMS",
         resourceType: "image",
       });

@@ -39,6 +39,13 @@ router.post(
 );
 
 router.get(
+  "/my-certificates",
+  apiLimiter,
+  isAuthenticated,
+  userController.getMyCertificates
+);
+
+router.get(
   "/my-enrolled-courses",
   apiLimiter,
   isAuthenticated,

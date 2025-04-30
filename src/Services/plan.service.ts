@@ -1,13 +1,14 @@
-import Plan, { IPlan } from "../models/plan.model";
-import { CreatePlanInterface } from "../Schema/plan.schema";
+import Plan from "../models/plan.model";
+import {CreatePlanInterface} from "../Schema/plan.schema";
 
 class PlanService {
+  //todo: handle pagination
   async fetchAllPlans() {
     const plans = await Plan.find();
-    return { success: true, data: plans };
+    return {success: true, data: plans};
   }
 
-  async createPlan({
+  public async createPlan({
     description,
     duration,
     features,
@@ -36,7 +37,7 @@ class PlanService {
     };
   }
 
-  async updatePlan(
+  public async updatePlan(
     id: string,
     {
       name,
@@ -48,8 +49,8 @@ class PlanService {
     }: CreatePlanInterface
   ) {
     const updatedPlan = await Plan.findByIdAndUpdate(
-      { _id: id },
-      { name, description, features, price, duration, planType }
+      {_id: id},
+      {name, description, features, price, duration, planType}
     );
     if (!updatedPlan) {
       return {
