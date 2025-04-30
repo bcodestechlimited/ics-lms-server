@@ -6,7 +6,6 @@ import {StatusCodes} from "http-status-codes";
 import {APP_CONFIG} from "../config/app.config";
 
 class AuthController {
-  // test: this service
   public async login(req: Request, res: Response, next: NextFunction) {
     const {email, password} = req.body;
     const serviceResponse = await authService.login(email, password);
@@ -25,7 +24,6 @@ class AuthController {
     res.status(serviceResponse?.statusCode).json(serviceResponse);
   }
 
-  // test: this service
   public async register(req: Request, res: Response, next: NextFunction) {
     const {email, telephone, firstName, lastName, password} = req.body;
     const serviceResponse = await authService.register({
@@ -39,7 +37,6 @@ class AuthController {
     res.status(serviceResponse.statusCode).json(serviceResponse);
   }
 
-  // test: this service
   public async activateAccount(req: Request, res: Response) {
     const {token} = req.body;
     const serviceResponse = await authService.activateAccount(token as string);
@@ -47,12 +44,10 @@ class AuthController {
     res.status(serviceResponse.statusCode).json(serviceResponse);
   }
 
-  // test: this service
   public async getSession(req: ExtendedRequest, res: Response) {
     return res.status(200).json(req.user);
   }
 
-  // test: this service
   public async forgotPassword(req: Request, res: Response) {
     const {email} = req.body;
     const resetUrl = `${APP_CONFIG.CLIENT_FRONTEND_BASE_URL}/auth/reset-password`;
@@ -61,7 +56,6 @@ class AuthController {
     res.status(serviceResponse.statusCode).json(serviceResponse);
   }
 
-  // test: this service
   public async resetPassword(req: Request, res: Response) {
     const {token, newPassword} = req.body;
     console.log(token, newPassword);

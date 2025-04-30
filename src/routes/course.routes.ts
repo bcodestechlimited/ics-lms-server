@@ -56,7 +56,6 @@ router
     apiLimiter,
     isAuthenticated,
     checkUserRole(["admin", "superadmin"]),
-    uploadFile,
     courseController.uploadCourseController
   );
 
