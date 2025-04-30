@@ -70,14 +70,16 @@ class AdminController {
 
   public async uploadCertificateTemplate(req: Request, res: Response) {
     const files = req.files as fileUpload.FileArray | undefined;
-    if (!files?.signature) {
+    if (!files?.certificate_template) {
       return res.status(400).json({error: "No file uploaded"});
     }
-    const sigFile = Array.isArray(files.certificate_template)
-      ? files.signature[0]
-      : files.signature;
+    const certificateFile = Array.isArray(files.certificate_template)
+      ? files.certificate_template[0]
+      : files.certificate_template;
 
-    const response = await adminService.uploadCertificateTemplate(sigFile);
+    const response = await adminService.uploadCertificateTemplate(
+      certificateFile
+    );
 
     res.status(response.statusCode).json(response);
   }

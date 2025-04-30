@@ -29,7 +29,7 @@ import {APP_CONFIG} from "../config/app.config";
 import {certificateService} from "./certificate.service";
 
 class CourseService {
-  async fetchAllPublishedCourse({options, query}: CourseQueryOptions) {
+  public async fetchAllPublishedCourse({options, query}: CourseQueryOptions) {
     const courses = await Course.paginate(query, options);
     return courses;
   }
@@ -44,7 +44,7 @@ class CourseService {
    * @throws Will throw an error if the course creation fails.
    */
 
-  async createNewCourse(payload: CreateCourseInterface) {
+  public async createNewCourse(payload: CreateCourseInterface) {
     try {
       const course = await Course.create({
         title: payload.courseTitle,
@@ -79,7 +79,7 @@ class CourseService {
    * @throws Will throw an error if the insertion fails.
    */
 
-  async createCourseAssessment(payload: CreateAssessmentInterface) {
+  public async createCourseAssessment(payload: CreateAssessmentInterface) {
     try {
       const response = await CourseAssessment.insertMany(
         payload.questions.map((q) => {
@@ -111,7 +111,7 @@ class CourseService {
    *
    * @throws Will throw an error if the benchmark creation fails.
    */
-  async createCourseBenchmark(payload: CreateBenchmarkInterface) {
+  public async createCourseBenchmark(payload: CreateBenchmarkInterface) {
     try {
       const response = await CourseBenchmark.create(payload);
       return {
@@ -122,7 +122,7 @@ class CourseService {
     }
   }
 
-  async getCourseModules(id: string) {
+  public async getCourseModules(id: string) {
     const course = await Course.findById({_id: id}).populate("course_modules");
 
     if (!course) {
@@ -154,7 +154,7 @@ class CourseService {
     }
   }
 
-  async publishCourse(courseId: string) {
+  public async publishCourse(courseId: string) {
     const course = await Course.findById({_id: courseId});
     if (!course) {
       return {
@@ -170,7 +170,7 @@ class CourseService {
     };
   }
 
-  async fetchCourseById(
+  public async fetchCourseById(
     courseId: string | mongoose.Types.ObjectId,
     userRole: string | undefined
   ) {
@@ -204,7 +204,7 @@ class CourseService {
     }
   }
 
-  async fetchAllAdminCourses({options, query}: CourseQueryOptions) {
+  public async fetchAllAdminCourses({options, query}: CourseQueryOptions) {
     const course = await Course.paginate(query, options);
 
     return {
@@ -214,7 +214,7 @@ class CourseService {
     };
   }
 
-  async updateCourse(courseId: string, payload: Record<string, any>) {
+  public async updateCourse(courseId: string, payload: Record<string, any>) {
     const course = await Course.findByIdAndUpdate(courseId, payload, {
       new: true,
     });
@@ -232,7 +232,7 @@ class CourseService {
     };
   }
 
-  async updateCourseBenchmark(
+  public async updateCourseBenchmark(
     payload: {retakes: number; benchmark: number},
     id: string
   ) {
@@ -260,6 +260,20 @@ class CourseService {
     };
   }
 
+  // test this service
+
+  /**
+   * 
+   * @param userId 
+   * @param courseId 
+   * @param answers 
+   * @returns 
+   * 
+   * const questions = await CourseAssessment
+  .find({ courseId })
+  .select('+options.isCorrect');    // <— this pulls in isCorrect
+
+   */
   public async submitCourseAssessment(
     userId: string,
     courseId: string,
@@ -269,7 +283,10 @@ class CourseService {
     session.startTransaction();
 
     try {
-      const questions = await CourseAssessment.find({courseId});
+      const questions = await CourseAssessment.find({courseId}).select(
+        "+options.isCorrect"
+      );
+      // console.log("questions", questions);
       if (!questions.length) {
         await session.abortTransaction();
         return ServiceResponse.failure(
@@ -311,8 +328,9 @@ class CourseService {
 
         return {
           questionId: new mongoose.Types.ObjectId(question._id),
-          selectedOptionId: userAnswer?.selectedOptionId || -1,
+          selectedOptionId: userAnswer?.selectedOptionId ?? -1,
           isCorrect: userAnswer?.selectedOptionId === correctOption?.id,
+          correctOptionId: correctOption,
         };
       });
 
@@ -336,6 +354,7 @@ class CourseService {
           questionId: a.questionId,
           selectedOptionId: a.selectedOptionId,
           isCorrect: a.isCorrect,
+          correctOptionId: a.correctOptionId,
         })),
       });
 
@@ -346,7 +365,7 @@ class CourseService {
         progress.status = CourseStatusEnum.COMPLETED;
         progress.completedAt = new Date();
         if (!progress.certificateIssued) {
-          await certificateService.issueCertificate(userId, courseId, session);
+          await certificateService.issueCertificate(userId, courseId);
           progress.certificateIssued = true;
         }
       } else if (isFinalAttempt) {
@@ -360,9 +379,7 @@ class CourseService {
       const corrections = isFinalAttempt
         ? validatedAnswers.map((a) => ({
             questionId: a.questionId.toString(),
-            correctOption: questions
-              .find((q) => q._id.toString() === a.questionId.toString())
-              ?.options.find((o) => o.isCorrect)?.id,
+            correctOption: a.correctOptionId,
             userSelected: a.selectedOptionId,
             isCorrect: a.isCorrect,
           }))
@@ -383,6 +400,7 @@ class CourseService {
         StatusCodes.OK
       );
     } catch (error) {
+      console.log("error", error);
       await session.abortTransaction();
       return ServiceResponse.failure(
         "Internal Server Error",

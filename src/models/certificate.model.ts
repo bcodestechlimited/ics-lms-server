@@ -1,29 +1,37 @@
-import mongoose, { Schema } from "mongoose";
-import { Document } from "mongoose";
+import mongoose, {Document, Schema, model, Types} from "mongoose";
+import mongoosePaginate from "mongoose-paginate-v2";
 
-interface ICertificate extends Document {
-  userName: string;
-  courseTitle: string;
-  // cloudinaryId: string;
-  cloudinaryUrl: string;
+export interface ICertificate extends Document {
+  userId: Types.ObjectId;
+  courseId: any;
+  path: string;
+  fileName: string;
+  issuedAt: Date;
   createdAt: Date;
 }
 
-const certificateSchema = new Schema<ICertificate>(
+const CertificateSchema = new Schema<ICertificate>(
   {
-    userName: { type: String, required: true },
-    courseTitle: { type: String, required: true },
-    // cloudinaryId: { type: String, required: true },
-    cloudinaryUrl: { type: String, required: true },
+    userId: {type: Schema.Types.ObjectId, ref: "User", required: true},
+    courseId: {type: Schema.Types.ObjectId, ref: "Course", required: true},
+    path: {type: String, required: true},
+    fileName: {type: String, required: true},
+    issuedAt: {type: Date, default: Date.now},
   },
-  {
-    timestamps: true,
-  }
+  {timestamps: true}
 );
 
-const CourseCertificateModel = mongoose.model<ICertificate>(
-  "CourseCertificate",
-  certificateSchema
-);
+CertificateSchema.plugin(mongoosePaginate);
 
-export default CourseCertificateModel;
+// Create a compound index to ensure uniqueness per user and course
+CertificateSchema.index({userId: 1, courseId: 1}, {unique: true});
+
+export interface ICertificateModel<T extends Document>
+  extends mongoose.PaginateModel<T> {}
+
+const Certificate = model<ICertificate>(
+  "Certificate",
+  CertificateSchema
+) as ICertificateModel<ICertificate>;
+
+export default Certificate;

@@ -182,7 +182,6 @@ class AuthService {
     }
   }
 
-  // test: test this endpoint
   public async forgotPassword(email: string, resetUrl: string) {
     try {
       const user = await User.findOne({email}).populate("passwordVersion");
@@ -195,9 +194,8 @@ class AuthService {
       }
 
       const token = user.generatePasswordResetToken();
-      console.log("token", token);
-      await user.save();
-      console.log("user", user);
+     
+      await user.save();     
       const emailPayload = {
         subject: "Password Reset",
         template: "reset-password",

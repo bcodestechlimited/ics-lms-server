@@ -1,20 +1,17 @@
 import express from "express";
-import { apiLimiter } from "../Middlewares/RateLimiter";
-import { checkUserRole, isAuthenticated } from "../Middlewares/Auth";
-import CertificateController from "../controllers/certificate.controller";
-import validateRequest from "../Middlewares/validation.middleware";
-import { CreateCertificateSchema } from "../Schema/certificate.schema";
+import {checkUserRole, isAuthenticated} from "../Middlewares/Auth";
+import {certificateController} from "../controllers/certificate.controller";
+import {apiLimiter} from "../Middlewares/RateLimiter";
 
 const router = express.Router();
-const certificateController = new CertificateController();
 
-router.route("/generate-certificate").post(
-  apiLimiter,
-  validateRequest(CreateCertificateSchema),
+router.get(
+  "/",
   isAuthenticated,
+  apiLimiter,
   checkUserRole(["admin", "superadmin"]),
-
-  certificateController.generateCertificate
+  certificateController.getStudentsWithIssuedCertificate
 );
+
 
 export default router;
