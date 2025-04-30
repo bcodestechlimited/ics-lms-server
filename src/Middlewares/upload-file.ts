@@ -11,6 +11,7 @@ export function uploadFile(req: Request, res: Response, next: NextFunction) {
         .json({ message: `File upload failed: ${err.message}` });
     }
     if (err) {
+      console.log("err", err);
       return res
         .status(500)
         .json({ message: `An unknown error occurred: ${err.message}` });
