@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import {StatusCodes} from "http-status-codes";
 import mongoose, {Types} from "mongoose";
+import {APP_CONFIG} from "../config/app.config";
 import {CourseDTO} from "../dtos/course.dto";
 import {
   CreateAssessmentInterface,
@@ -23,10 +24,9 @@ import {
   generateRandomPassword,
 } from "../utils/lib";
 import {ServiceResponse} from "../utils/service-response";
+import {certificateService} from "./certificate.service";
 import {fileParserService} from "./file-parser.service";
 import {emailService} from "./mail.service";
-import {APP_CONFIG} from "../config/app.config";
-import {certificateService} from "./certificate.service";
 
 class CourseService {
   public async fetchAllPublishedCourse({options, query}: CourseQueryOptions) {
@@ -113,7 +113,10 @@ class CourseService {
    */
   public async createCourseBenchmark(payload: CreateBenchmarkInterface) {
     try {
-      const response = await CourseBenchmark.create(payload);
+      const response = await CourseBenchmark.create({
+        ...payload,
+        course: payload.courseId,
+      });
       return {
         data: response,
       };
@@ -176,7 +179,7 @@ class CourseService {
   ) {
     try {
       const course = await Course.findById(courseId).populate(
-        "course_modules course_price"
+        "course_modules course_price course_benchmark"
       );
       if (!course) {
         return ServiceResponse.failure(
@@ -196,8 +199,43 @@ class CourseService {
         StatusCodes.OK
       );
     } catch (error) {
+      console.log("error", error);
       return ServiceResponse.failure(
         "Internal Server Error",
+        null,
+        StatusCodes.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  public async fetchCoursePriceByCourseId(courseId: string) {
+    try {
+      const coursePrice = await CoursePricing.findOne({courseId});
+      return ServiceResponse.success(
+        "Course price found",
+        {data: coursePrice},
+        StatusCodes.OK
+      );
+    } catch (error) {
+      return ServiceResponse.failure(
+        "Error fetching course price",
+        null,
+        StatusCodes.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  public async fetchCourseBenchmarkByCourseId(courseId: string) {
+    try {
+      const courseBenchmark = await CourseBenchmark.findOne({courseId});
+      return ServiceResponse.success(
+        "Course benchmark found",
+        {data: courseBenchmark},
+        StatusCodes.OK
+      );
+    } catch (error) {
+      return ServiceResponse.failure(
+        "Error fetching course benchmark",
         null,
         StatusCodes.INTERNAL_SERVER_ERROR
       );
@@ -837,6 +875,16 @@ class CourseService {
     });
 
     return user?.expiredCourses || [];
+  }
+
+  public async deleteCourseByCourseId(courseId: string) {
+    const course = await Course.findByIdAndDelete(courseId);
+
+    return ServiceResponse.success(
+      "Course deleted successfully",
+      course,
+      StatusCodes.NO_CONTENT
+    );
   }
 }
 

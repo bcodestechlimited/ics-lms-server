@@ -6,20 +6,20 @@ import {apiLimiter} from "../Middlewares/RateLimiter";
 
 const router = Router();
 
-const upload = multer({
-  dest: "uploads/",
-  limits: {fieldSize: 100 * 1024 * 1024},
-  fileFilter(req, file, cb) {
-    if (
-      file.mimetype.startsWith("image/") ||
-      file.mimetype.startsWith("video/")
-    ) {
-      cb(null, true);
-    } else {
-      cb(new Error("Invalid File type!"));
-    }
-  },
-});
+// const upload = multer({
+//   dest: "uploads/",
+//   limits: {fieldSize: 100 * 1024 * 1024},
+//   fileFilter(req, file, cb) {
+//     if (
+//       file.mimetype.startsWith("image/") ||
+//       file.mimetype.startsWith("video/")
+//     ) {
+//       cb(null, true);
+//     } else {
+//       cb(new Error("Invalid File type!"));
+//     }
+//   },
+// });
 
 router.post(
   "/:moduleId/complete",
@@ -37,7 +37,6 @@ router
     isAuthenticated,
     checkUserRole(["admin", "superadmin"]),
     apiLimiter,
-    upload.any(),
     courseModuleController.create
   );
 
@@ -47,7 +46,6 @@ router
     isAuthenticated,
     apiLimiter,
     checkUserRole(["admin", "superadmin"]),
-    upload.any(),
     courseModuleController.update
   )
   .get(isAuthenticated, apiLimiter, courseModuleController.getCourseModuleById);

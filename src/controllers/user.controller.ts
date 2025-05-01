@@ -144,51 +144,18 @@ class UserController {
     }
   }
 
-  // TODO:
-  // return all the courses by the user
-  // return all the courses the person is currently enrolled in
-  // return all the courses the person has completed
-  // return all the courses the person has earned a certificate in
-
   async getUserAnalytics(req: Request, res: Response) {
-    try {
-      const {id} = req.params;
-      if (!isMongooseIdValid(id)) {
-        return handleServiceResponse(
-          ServiceResponse.failure(
-            "Invalid Id provided",
-            null,
-            StatusCodes.BAD_REQUEST
-          ),
-          res
-        );
-      }
-      const response = await userService.fetchCourseAnalytics(id);
-      if (!response.success) {
-        return handleServiceResponse(
-          ServiceResponse.failure("Bad Request", null, StatusCodes.BAD_REQUEST),
-          res
-        );
-      }
+    const {id} = req.params;
 
-      handleServiceResponse(
-        ServiceResponse.success(
-          "Success",
-          {...response, data: response?.data?.[0]},
-          StatusCodes.OK
-        ),
-        res
-      );
-    } catch (error) {
-      handleServiceResponse(
-        ServiceResponse.failure(
-          "Internal Server Error",
-          null,
-          StatusCodes.INTERNAL_SERVER_ERROR
-        ),
+    const response = await userService.fetchCourseAnalytics(id);
+    if (!response.success) {
+      return handleServiceResponse(
+        ServiceResponse.failure("Bad Request", null, StatusCodes.BAD_REQUEST),
         res
       );
     }
+
+    res.status(response.statusCode).json(response);
   }
 
   // test: api for user to request for course extension
@@ -227,15 +194,15 @@ class UserController {
     res.status(response.statusCode).json(response);
   }
 
-  public async getMyCertificates(req: ExtendedRequest, res: Response){
-     const {page = 1, limit = 10, sort = "issuedAt"} = req.query;
+  public async getMyCertificates(req: ExtendedRequest, res: Response) {
+    const {page = 1, limit = 10, sort = "issuedAt"} = req.query;
     const userId = req.user?._id;
 
-     const response = await userService.fetchMyCertificates(userId, {
-       page: Number(page),
-       limit: Number(limit),
-       sort: {[sort as string]: -1},
-     });
+    const response = await userService.fetchMyCertificates(userId, {
+      page: Number(page),
+      limit: Number(limit),
+      sort: {[sort as string]: -1},
+    });
 
     res.status(response.statusCode).json(response);
   }

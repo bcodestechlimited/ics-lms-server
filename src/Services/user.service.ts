@@ -6,6 +6,7 @@ import UserCourseExtensionRequest from "../models/user-request.model";
 import {ServiceResponse} from "../utils/service-response";
 import {courseService} from "./course.service";
 import {certificateService} from "./certificate.service";
+import {analyticsService} from "./analytics.service";
 
 class UserService {
   async getMe(id: string) {
@@ -75,61 +76,20 @@ class UserService {
   }
 
   public async fetchCourseAnalytics(id: string) {
-    const stats = await User.aggregate([
-      {$match: {_id: new mongoose.Types.ObjectId(id)}},
-      {
-        $lookup: {
-          from: "progresses",
-          localField: "progress",
-          foreignField: "_id",
-          as: "progressData",
-        },
-      },
-      {
-        $project: {
-          totalCourses: {$size: "$courses"},
-          enrolledCourses: {
-            $size: {
-              $filter: {
-                input: "$progressData",
-                as: "p",
-                cond: {$eq: ["$$p.status", "in-progress"]},
-              },
-            },
-          },
-          completedCourses: {
-            $size: {
-              $filter: {
-                input: "$progressData",
-                as: "p",
-                cond: {$eq: ["$$p.status", "completed"]},
-              },
-            },
-          },
-          certifiedCourses: {
-            $size: {
-              $filter: {
-                input: "$progressData",
-                as: "p",
-                cond: {$eq: ["$$p.certificateIssued", true]},
-              },
-            },
-          },
-        },
-      },
-    ]);
-
-    if (!stats) {
-      return {
-        success: false,
-        message: "No user found",
-      };
+    try {
+      const response = await analyticsService.fetchCourseAnalytics(id);
+      return ServiceResponse.success(
+        "Successfully fetched user analytics",
+        response,
+        StatusCodes.OK
+      );
+    } catch (error) {
+      return ServiceResponse.failure(
+        "Failed to get user analytics",
+        null,
+        StatusCodes.INTERNAL_SERVER_ERROR
+      );
     }
-
-    return {
-      success: true,
-      data: stats,
-    };
   }
 
   // test: api

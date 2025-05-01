@@ -129,14 +129,18 @@ router
     courseController.publishCourse
   );
 
-router
-  .route("/:id")
-  .put(
-    apiLimiter,
-    isAuthenticated,
-    checkUserRole(["admin", "superadmin"]),
-    courseController.updateCourseController
-  );
+
+router.get(
+  "/course-pricing/:id",
+  apiLimiter,
+  courseController.getCoursePricing
+);
+
+router.get(
+  "/course-benchmark/:id",
+  apiLimiter,
+  courseController.getCourseBenchmark
+);
 
 router
   .route("/course-assessment/:id")
@@ -151,27 +155,21 @@ router
   .route("/course-assessments/:id/submit")
   .post(apiLimiter, isAuthenticated, courseController.submitCourseAssessment);
 
-router.route("/:id").get(apiLimiter, courseController.getCourseById);
-
-// bug: fix this code later
-// router
-//   .route("/")
-//   .get((req, res) => {
-//     res.send("The code is here");
-//   })
-//   .post(
-//     isAuthenticated,
-//     checkUserRole(["admin", "superadmin"]),
-//     uploadFile,
-//     courseController.uploadCourseController
-//   );
-
 router
   .route("/:id")
   .put(
+    apiLimiter,
     isAuthenticated,
     checkUserRole(["admin", "superadmin"]),
     courseController.updateCourseController
+  )
+  .get(apiLimiter, courseController.getCourseById)
+  .delete(
+    apiLimiter,
+    isAuthenticated,
+    checkUserRole(["admin", "superadmin"]),
+    courseController.deleteCourse
   );
+
 
 export default router;

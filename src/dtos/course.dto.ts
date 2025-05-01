@@ -11,6 +11,7 @@ export class CourseDTO {
   // courseBenchmark: Omit<CreateBenchmarkInterface, "courseId">;
   course_modules: any[];
   course_price: any;
+  log: any;
 
   constructor(course: any) {
     (this.id = course._id), (this.courseCode = course._id);
@@ -34,7 +35,10 @@ export class CourseDTO {
       };
     });
     this.course_price = {
-      price: course.course_price.coursePricing,
+      price: course.course_price,
+    };
+    this.log = function () {
+      console.log(this);
     };
   }
 }
