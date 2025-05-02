@@ -1,4 +1,5 @@
 import {Request, Response} from "express";
+import {FileArray} from "express-fileupload";
 import {StatusCodes} from "http-status-codes";
 import {ExtendedRequest} from "../interfaces/auth.interface";
 import {handleServiceResponse} from "../Middlewares/validation.middleware";
@@ -14,7 +15,6 @@ export class CourseModuleController {
       const {courseId, title} = req.body;
       const contentSections = JSON.parse(req.body.contentSections);
 
-      const files = Array.isArray(req.files) ? req.files : [];
       const course = await Course.findById(courseId);
       if (!course) {
         return res.status(404).json({
@@ -23,9 +23,10 @@ export class CourseModuleController {
         });
       }
 
+      const filesMap = (req.files as unknown as FileArray) || {};
       const processedSections = await courseModuleService.processSection(
         contentSections,
-        files
+        filesMap
       );
 
       const lastModule = await CourseModule.findOne({courseId})
@@ -49,11 +50,6 @@ export class CourseModuleController {
         {new: true}
       );
 
-      // return res.status(201).json({
-      //   message: `${title} module created`,
-      //   success: true,
-      //   data: { response, updatedCourse },
-      // });
       handleServiceResponse(
         ServiceResponse.success(
           `${title} module created`,
@@ -78,72 +74,38 @@ export class CourseModuleController {
 
   public async update(req: Request, res: Response) {
     try {
-      const {id} = req.params;
-      const {title, contentSections} = req.body;
-      const parsedContentSections = contentSections
-        ? JSON.parse(contentSections)
+      const moduleId = req.params.id;
+      const title = req.body.title as string | undefined;
+
+      // parse the JSON array we stringified on the client
+      const rawSections: any[] = req.body.contentSections
+        ? JSON.parse(req.body.contentSections)
         : [];
 
-      const courseModule = await CourseModule.findById(id);
-      if (!courseModule) {
+      // build a map of uploads: fieldName → UploadedFile|UploadedFile[]
+      const filesMap = (req.files as unknown as FileArray) || {};
+      const updated = await courseModuleService.updateModule(
+        moduleId,
+        title,
+        rawSections,
+        filesMap
+      );
+
+      if (!updated) {
         return handleServiceResponse(
           ServiceResponse.failure("Course module not found", null, 404),
           res
         );
       }
 
-      const files = Array.isArray(req.files) ? req.files : [];
-      const processedSections = await courseModuleService.processSection(
-        parsedContentSections,
-        files
-      );
-
-      if (title) {
-        courseModule.title = title;
-      }
-
-      if (contentSections) {
-        // Create a map of processed sections for quick lookup
-        const processedSectionsMap = new Map();
-        processedSections.content.forEach((section) => {
-          processedSectionsMap.set(section.sectionId, section);
-        });
-
-        courseModule.contentSections = courseModule.contentSections.map(
-          (section) => {
-            if (processedSectionsMap.has(section.sectionId)) {
-              const processedSection = processedSectionsMap.get(
-                section.sectionId
-              );
-              return {
-                ...section,
-                content: processedSection.content,
-              };
-            }
-            return section;
-          }
-        );
-
-        processedSections.content.forEach((section) => {
-          if (
-            !courseModule.contentSections.some(
-              (existingSection) =>
-                existingSection.sectionId === section.sectionId
-            )
-          ) {
-            courseModule.contentSections.push(section);
-          }
-        });
-      }
-
-      await courseModule.save();
-
-      handleServiceResponse(
-        ServiceResponse.success("Course module updated", courseModule, 200),
+      // **use the updated doc** when you respond
+      return handleServiceResponse(
+        ServiceResponse.success("Course module updated", updated, 200),
         res
       );
     } catch (error) {
-      handleServiceResponse(
+      console.error("update module error", error);
+      return handleServiceResponse(
         ServiceResponse.failure("Failed to update course module", null, 500),
         res
       );

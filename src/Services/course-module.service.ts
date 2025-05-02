@@ -8,6 +8,7 @@ import {CourseModule} from "../models/course-module.model";
 import {uploadToCloudinary} from "../utils/cloudinary.utils";
 import {ServiceResponse} from "../utils/service-response";
 import Progress, {CourseStatusEnum} from "../models/progress.model";
+import {UploadedFile} from "express-fileupload";
 
 class CourseModuleService {
   /**
@@ -46,13 +47,17 @@ class CourseModuleService {
    * content.
    */
   public async processHtmlContent(content: string): Promise<string> {
-    const window = new JSDOM("").window;
-    const domPurify = createDOMPurify(window);
-    const sanitizedContent = domPurify.sanitize(
-      content,
-      APP_CONFIG.PURIFY_CONFIG
-    );
-    return sanitizedContent;
+    try {
+      const window = new JSDOM("").window;
+      const domPurify = createDOMPurify(window);
+      const sanitizedContent = domPurify.sanitize(
+        content,
+        APP_CONFIG.PURIFY_CONFIG
+      );
+      return sanitizedContent;
+    } catch (error) {
+      throw new Error("Failed to process HTML content, processHtmlContent");
+    }
   }
 
   /**
@@ -70,112 +75,101 @@ class CourseModuleService {
     contentType: string,
     matchingFile: any
   ) {
-    const cloudinary_content = await uploadToCloudinary(matchingFile.path, {
-      folderName: folderName,
-      resourceType: contentType === "video" ? "video" : "image",
-    });
+    try {
+      const cloudinary_content = await uploadToCloudinary(
+        matchingFile.tempFilePath,
+        {
+          folderName: folderName,
+          resourceType: contentType === "video" ? "video" : "image",
+        }
+      );
 
-    return cloudinary_content;
+      return cloudinary_content;
+    } catch (error) {
+      throw new Error("Failed to upload file to cloudinary, handleFileUpload");
+    }
   }
 
   public async processSection(
     contentSections: any,
-    files: any[]
+    filesMap: {[field: string]: UploadedFile | UploadedFile[]}
   ): Promise<ProcessedSection> {
-    const processedSections =
-      files &&
-      (await Promise.all(
-        contentSections.map(async (section) => {
-          try {
-            const matchingFile = files.find(
-              (file) => file.fieldname === section.id
-            );
-            switch (section.type) {
-              case "image":
-              case "video": {
-                if (matchingFile) {
-                  const cloudinary_content = await this.handleFileUpload(
-                    "COURSE_MODULE",
-                    section.type,
-                    matchingFile
-                  );
-                  return {
-                    ...section,
-                    sectionId: section.id,
-                    content: cloudinary_content,
-                  };
-                }
-                break;
-              }
-              case "quote": {
-                if (matchingFile) {
-                  const cloudinary_content = await this.handleFileUpload(
-                    "COURSE_MODULE",
-                    "image",
-                    matchingFile
-                  );
-                  return {
-                    ...section,
-                    sectionId: section.id,
-                    content: cloudinary_content,
-                  };
-                }
-                break;
-              }
-              case "knowledge-check": {
-                return {
-                  ...section,
-                  sectionId: section.id,
-                  content: section.content[0],
-                };
-              }
-              case "list": {
-                const processedContent = await this.processHtmlContent(
-                  section.content
-                );
-                return {
-                  ...section,
-                  sectionId: section.id,
-                  content: processedContent,
-                };
-              }
-              default:
-                return section;
+    const processed = await Promise.all(
+      contentSections.map(async (section) => {
+        // pull the file (if any) out of the map by section.id
+        const maybe = filesMap[section.id];
+        const matchingFile = Array.isArray(maybe) ? maybe[0] : maybe;
+
+        // default to whatever the client sent
+        let finalContent = section.content;
+
+        switch (section.type) {
+          case "image":
+          case "video":
+            if (matchingFile) {
+              finalContent = await this.handleFileUpload(
+                "COURSE_MODULE",
+                section.type,
+                matchingFile
+              );
             }
-          } catch (error) {
-            console.log({error});
-            throw error;
-          }
-        })
-      ));
+            break;
 
-    return {
-      content: processedSections,
-    };
-  }
+          case "quote":
+            if (matchingFile) {
+              finalContent = await this.handleFileUpload(
+                "COURSE_MODULE",
+                "image",
+                matchingFile
+              );
+            }
+            break;
 
-  public async updateCourseModule(id: string, updateData: any, files: any) {
-    const existingModule = await CourseModule.findById(id);
-    if (!existingModule) {
-      throw new Error("Course module not found");
-    }
+          case "knowledge-check":
+            // send only the first item
+            finalContent = Array.isArray(section.content)
+              ? section.content[0]
+              : section.content;
+            break;
 
-    // Process content sections for media uploads
-    const processedSections = await this.processSection(
-      updateData.contentSections,
-      files
+          case "list":
+            finalContent = await this.processHtmlContent(section.content);
+            break;
+
+          // text and any other types just fall through
+        }
+
+        return {
+          sectionId: section.id, // **always** set this
+          type: section.type,
+          content: finalContent,
+        };
+      })
     );
 
-    // Update fields
-    existingModule.title = updateData.title;
-    existingModule.contentSections = processedSections.content;
-    await existingModule.save();
+    return {content: processed};
+  }
 
-    return {
-      message: "Course Module Updated Successfully",
-      success: true,
-      data: existingModule,
-    };
+  public async updateModule(
+    moduleId: string,
+    title: string | undefined,
+    rawSections: any[],
+    filesMap: {[key: string]: UploadedFile | UploadedFile[]}
+  ): Promise<typeof CourseModule.prototype | null> {
+    // 1) process sections
+    const {content} = await this.processSection(rawSections, filesMap);
+
+    // 2) replace and return updated doc
+    const updated = await CourseModule.findByIdAndUpdate(
+      moduleId,
+      {
+        ...(title !== undefined && {title}),
+        contentSections: content,
+      },
+      {new: true, runValidators: true}
+    ).exec();
+
+    return updated;
   }
 
   public async fetchModuleById(id: string) {

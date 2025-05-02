@@ -3,6 +3,7 @@ import mongoose, { Schema } from "mongoose";
 interface ICourseBenchmark extends Document {
   retakes: number;
   benchmark: number;
+  course: mongoose.Types.ObjectId;
 }
 
 const BenchmarkSchema = new Schema<ICourseBenchmark>(
@@ -17,9 +18,10 @@ const BenchmarkSchema = new Schema<ICourseBenchmark>(
         message: "{VALUE} is not an integer value for retakes",
       },
     },
-    benchmark: { type: Number, required: true },
+    benchmark: {type: Number, required: true},
+    course: {type: Schema.Types.ObjectId, ref: "Course"},
   },
-  { timestamps: true }
+  {timestamps: true}
 );
 
 const CourseBenchmark = mongoose.model<ICourseBenchmark>(

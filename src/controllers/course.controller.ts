@@ -476,29 +476,36 @@ class CourseController {
   }
 
   async getCourseById(req: ExtendedRequest, res: Response, next: NextFunction) {
-    try {
-      const courseId = req.params.id;
-      const userRole = req.query.role as string;
-      const serviceResponse = await courseService.fetchCourseById(
-        courseId,
-        userRole
-      );
+    const courseId = req.params.id;
+    const userRole = req.query.role as string;
+    const serviceResponse = await courseService.fetchCourseById(
+      courseId,
+      userRole
+    );
 
-      if (!serviceResponse.success) {
-        return res.status(serviceResponse.statusCode).json(serviceResponse);
-      }
-
-      res.status(serviceResponse.statusCode).json(serviceResponse);
-    } catch (error) {
-      handleServiceResponse(
-        ServiceResponse.failure(
-          "An error occurred while fetching course",
-          null,
-          StatusCodes.INTERNAL_SERVER_ERROR
-        ),
-        res
-      );
+    if (!serviceResponse.success) {
+      return res.status(serviceResponse.statusCode).json(serviceResponse);
     }
+
+    res.status(serviceResponse.statusCode).json(serviceResponse);
+  }
+
+  public async getCoursePricing(req: Request, res: Response) {
+    const courseId = req.params.id;
+    const serviceResponse = await courseService.fetchCoursePriceByCourseId(
+      courseId
+    );
+
+    res.status(serviceResponse.statusCode).json(serviceResponse);
+  }
+
+  public async getCourseBenchmark(req: Request, res: Response) {
+    const courseId = req.params.id;
+    const serviceResponse = await courseService.fetchCourseBenchmarkByCourseId(
+      courseId
+    );
+
+    res.status(serviceResponse.statusCode).json(serviceResponse);
   }
 
   async getCourseModules(req: Request, res: Response) {
@@ -853,6 +860,16 @@ class CourseController {
           error.message || "An error occurred while processing the request.",
       });
     }
+  }
+
+  public async deleteCourse(req: Request, res: Response) {
+    const courseId = req.params.id;
+
+    const serviceResponse = await courseService.deleteCourseByCourseId(
+      courseId
+    );
+
+    res.status(serviceResponse.statusCode).json(serviceResponse);
   }
 }
 

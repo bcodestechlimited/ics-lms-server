@@ -23,12 +23,13 @@ export const isLocalAuthenticated = async (
   try {
     let token: string | null = null;
 
-    console.log("the code is here in the local storage authenticator");
     if (
       req.headers.authorization &&
       req.headers.authorization.startsWith("Bearer")
     ) {
       token = req.headers.authorization.split("Bearer ")[1];
+    } else if (req.cookies?.accessToken) {
+      token = req.cookies.accessToken;
     }
 
     if (!token) {

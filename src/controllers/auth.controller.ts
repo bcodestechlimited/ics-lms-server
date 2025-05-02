@@ -56,6 +56,7 @@ class AuthController {
 
   public async forgotPassword(req: Request, res: Response) {
     const {email} = req.body;
+    console.log({email});
     const resetUrl = `${APP_CONFIG.CLIENT_FRONTEND_BASE_URL}/auth/reset-password`;
     const serviceResponse = await authService.forgotPassword(email, resetUrl);
 
