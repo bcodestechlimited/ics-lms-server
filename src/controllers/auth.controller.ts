@@ -4,6 +4,9 @@ import {StatusCodes} from "http-status-codes";
 import {authService} from "../Services/auth.service";
 import {APP_CONFIG} from "../config/app.config";
 import {ExtendedRequest} from "../interfaces/auth.interface";
+import {userService} from "../Services/user.service";
+import {RequestWithCourseImage} from "../interfaces/query";
+import {UploadedFile} from "express-fileupload";
 
 class AuthController {
   public async login(req: Request, res: Response, next: NextFunction) {
@@ -109,7 +112,32 @@ class AuthController {
   // todo: implement this service (write the code)
   public async suspendUserAccount() {}
 
-  public async updateProfile() {}
+  public async updateProfile(r, res: Response) {
+    const req = r as RequestWithCourseImage;
+    const {firstName, lastName, userId} = req.body;
+
+    let avatarTempPath: string | undefined;
+    if (req.files?.avatar) {
+      const rawImage = req.files.avatar as UploadedFile | UploadedFile[];
+      const file = Array.isArray(rawImage) ? rawImage[0] : rawImage;
+      if (!/(jpeg|jpg|png|gif|webp)/.test(file.mimetype)) {
+        return res
+          .status(StatusCodes.BAD_REQUEST)
+          .json({success: false, message: "Invalid image type"});
+      }
+
+      avatarTempPath = file.tempFilePath;
+    }
+
+    const serviceResponse = await userService.updateProfile({
+      firstName,
+      lastName,
+      userId,
+      tempFilePath: avatarTempPath,
+    });
+
+    res.status(serviceResponse.statusCode).json(serviceResponse);
+  }
 
   // idea: future implementation
   public async inviteStaff(req: Request, res: Response, next: NextFunction) {

@@ -66,6 +66,7 @@ export const isLocalAuthenticated = async (
       role: userResponse.role as string,
       isAdmin: userResponse.isAdmin,
       isEmailVerified: userResponse.isEmailVerified,
+      avatar: userResponse.avatar as string,
     };
 
     req.user = userObj;
@@ -88,7 +89,6 @@ export const isAuthenticated = async (
 
     if (req.cookies?.accessToken) {
       token = req.cookies.accessToken;
-
     } else if (
       req.headers.authorization &&
       req.headers.authorization.startsWith("Bearer ")
@@ -130,6 +130,7 @@ export const isAuthenticated = async (
       role: userResponse.role as string,
       isAdmin: userResponse.isAdmin,
       isEmailVerified: userResponse.isEmailVerified,
+      avatar: userResponse.avatar as string,
     };
 
     req.user = userObj;

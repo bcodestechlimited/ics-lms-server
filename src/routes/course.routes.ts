@@ -3,7 +3,7 @@ import multer from "multer";
 import {courseController} from "../controllers/course.controller.ts";
 import {checkUserRole, isAuthenticated} from "../Middlewares/Auth.ts";
 import {apiLimiter} from "../Middlewares/RateLimiter.ts";
-import {uploadCertificate, uploadFile} from "../Middlewares/upload-file.ts";
+import {uploadCertificate} from "../Middlewares/upload-file.ts";
 import validateRequest from "../Middlewares/validation.middleware.ts";
 import {
   CreateCourseAssessmentSchema,
@@ -129,7 +129,6 @@ router
     courseController.publishCourse
   );
 
-
 router.get(
   "/course-pricing/:id",
   apiLimiter,
@@ -170,6 +169,5 @@ router
     checkUserRole(["admin", "superadmin"]),
     courseController.deleteCourse
   );
-
 
 export default router;

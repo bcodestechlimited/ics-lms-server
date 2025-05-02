@@ -1,5 +1,4 @@
 import {Router} from "express";
-import {check} from "express-validator";
 import {authController} from "../controllers/auth.controller.ts";
 import {userController} from "../controllers/user.controller.ts";
 import {
@@ -81,9 +80,16 @@ router.get(
 
 router.post("/logout", isAuthenticated, userController.logout);
 
-router.put("/update-avatar", isAuthenticated, [
-  check("image", "Image ID required").isMongoId(),
-]);
+// router.put("/update-avatar", isAuthenticated, [
+//   check("image", "Image ID required").isMongoId(),
+// ]);
+
+router.put(
+  "/update-profile",
+  apiLimiter,
+  isAuthenticated,
+  authController.updateProfile
+);
 
 router.put(
   "/update-password",

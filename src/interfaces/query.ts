@@ -1,3 +1,6 @@
+import {Request} from "express";
+import {FileArray, UploadedFile} from "express-fileupload";
+
 export interface PaginationOptions {
   page?: number;
   limit?: number;
@@ -44,3 +47,9 @@ export interface QueryResponse<T> {
   data: T[];
   meta: QueryMetadata;
 }
+
+export type RequestWithCourseImage = Request & {
+  files: FileArray & {
+    courseImage: UploadedFile | UploadedFile[];
+  };
+};

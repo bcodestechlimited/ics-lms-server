@@ -1,11 +1,13 @@
 import createDOMPurify from "dompurify";
 import {NextFunction, Request, Response} from "express";
+import {UploadedFile} from "express-fileupload";
 import {StatusCodes} from "http-status-codes";
 import {JSDOM} from "jsdom";
 import {Types} from "mongoose";
 import {ZodError} from "zod";
 import {APP_CONFIG} from "../config/app.config";
 import {ExtendedRequest} from "../interfaces/auth.interface";
+import {RequestWithCourseImage} from "../interfaces/query";
 import {handleServiceResponse} from "../Middlewares/validation.middleware";
 import Course from "../models/Course";
 import CourseAssessment, {
@@ -16,17 +18,10 @@ import {bulkAssignCourseSchema} from "../Schema/course.schema";
 import {CourseService} from "../Services/course.service";
 import {uploadToCloudinary} from "../utils/cloudinary.utils";
 import {ServiceResponse} from "../utils/service-response";
-import {FileArray, UploadedFile} from "express-fileupload";
 
 const courseService = new CourseService();
 const window = new JSDOM("").window;
 const domPurify = createDOMPurify(window);
-
-export type RequestWithCourseImage = Request & {
-  files: FileArray & {
-    courseImage: UploadedFile | UploadedFile[];
-  };
-};
 
 class CourseController {
   async getAllPublishedController(req: Request, res: Response) {

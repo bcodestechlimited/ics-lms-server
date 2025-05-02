@@ -16,6 +16,7 @@ export interface ExtendedRequest extends Request {
     firstName: string;
     lastName: string;
     role: string;
+    avatar: string;
   };
 }
 
