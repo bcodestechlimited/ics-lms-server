@@ -28,6 +28,8 @@ export const isLocalAuthenticated = async (
       req.headers.authorization.startsWith("Bearer")
     ) {
       token = req.headers.authorization.split("Bearer ")[1];
+    } else if (req.cookies?.accessToken) {
+      token = req.cookies.accessToken;
     }
 
     if (!token) {
