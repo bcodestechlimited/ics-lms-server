@@ -7,6 +7,7 @@ import {ServiceResponse} from "../utils/service-response";
 import {courseService} from "./course.service";
 import {certificateService} from "./certificate.service";
 import {analyticsService} from "./analytics.service";
+import {uploadToCloudinary} from "../utils/cloudinary.utils";
 
 class UserService {
   async getMe(id: string) {
@@ -240,6 +241,86 @@ class UserService {
         StatusCodes.INTERNAL_SERVER_ERROR
       );
     }
+  }
+
+  public async updateProfile({
+    firstName,
+    lastName,
+    userId,
+    tempFilePath,
+  }: {
+    firstName: string;
+    lastName: string;
+    userId: string;
+    tempFilePath: string | undefined;
+  }) {
+    try {
+      const updateFields: any = {};
+      if (firstName !== undefined) updateFields.firstName = firstName;
+      if (lastName !== undefined) updateFields.lastName = lastName;
+      if (tempFilePath) {
+        const cloudinary_image = await uploadToCloudinary(tempFilePath, {
+          folderName: "users",
+          resourceType: "image",
+        });
+
+        if (!cloudinary_image) {
+          return ServiceResponse.failure(
+            "Failed to update user profile photo",
+            null,
+            StatusCodes.BAD_REQUEST
+          );
+        }
+
+        updateFields.avatar = cloudinary_image;
+      }
+
+      const updated = await User.findByIdAndUpdate(userId, updateFields, {
+        new: true,
+        runValidators: true,
+      });
+
+      if (!updated) {
+        return ServiceResponse.failure(
+          "User not found",
+          null,
+          StatusCodes.NOT_FOUND
+        );
+      }
+
+      return ServiceResponse.success(
+        "User profile updated",
+        updated,
+        StatusCodes.OK
+      );
+    } catch (error) {
+      return ServiceResponse.failure(
+        "Error updating user profile",
+        null,
+        StatusCodes.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  // note: tie the status here to isEmailVerified -> in the future when the user has not verified their email, the status will be inactive
+  public async toggleAccountStatus(userId: string) {
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return ServiceResponse.failure(
+        "User not found",
+        null,
+        StatusCodes.NOT_FOUND
+      );
+    }
+
+    user.isActive = !user.isActive;
+    await user.save();
+    return ServiceResponse.success(
+      "Account status updated",
+      user,
+      StatusCodes.OK
+    );
   }
 }
 

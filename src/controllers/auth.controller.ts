@@ -4,17 +4,22 @@ import {StatusCodes} from "http-status-codes";
 import {authService} from "../Services/auth.service";
 import {APP_CONFIG} from "../config/app.config";
 import {ExtendedRequest} from "../interfaces/auth.interface";
+import {userService} from "../Services/user.service";
+import {RequestWithCourseImage} from "../interfaces/query";
+import {UploadedFile} from "express-fileupload";
 
 class AuthController {
   public async login(req: Request, res: Response, next: NextFunction) {
     const {email, password} = req.body;
     const serviceResponse = await authService.login(email, password);
 
-    if (!serviceResponse?.responseObject?.token) {
-      return res
-        .status(401)
-        .json({message: "Unauthorized, Login to access resource"});
-    }
+    console.log({serviceResponse});
+
+    // if (!serviceResponse?.responseObject?.token) {
+    //   return res
+    //     .status(401)
+    //     .json({message: "Unauthorized, Login to access resource"});
+    // }
     res.cookie("accessToken", serviceResponse?.responseObject?.token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -56,8 +61,13 @@ class AuthController {
 
   public async forgotPassword(req: Request, res: Response) {
     const {email} = req.body;
-    console.log({email});
-    const resetUrl = `${APP_CONFIG.CLIENT_FRONTEND_BASE_URL}/auth/reset-password`;
+    const role = req.query?.role as string;
+    let resetUrl: string;
+    if (["admin", "superadmin"].includes(role)) {
+      resetUrl = `${APP_CONFIG.ADMIN_FRONTEND_BASE_URL}/auth/reset-password`;
+    } else {
+      resetUrl = `${APP_CONFIG.CLIENT_FRONTEND_BASE_URL}/auth/reset-password`;
+    }
     const serviceResponse = await authService.forgotPassword(email, resetUrl);
 
     res.status(serviceResponse.statusCode).json(serviceResponse);
@@ -107,9 +117,43 @@ class AuthController {
   }
 
   // todo: implement this service (write the code)
-  public async suspendUserAccount() {}
+  public async suspendUserAccount(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) {
+    const {id} = req.params;
+    const serviceResponse = await userService.toggleAccountStatus(id);
 
-  public async updateProfile() {}
+    res.status(serviceResponse.statusCode).json(serviceResponse);
+  }
+
+  public async updateProfile(req: ExtendedRequest, res: Response) {
+    const {firstName, lastName} = req.body;
+    const userId = req.user && req.user._id;
+
+    let avatarTempPath: string | undefined;
+    if (req.files?.avatar) {
+      const rawImage = req.files.avatar as UploadedFile | UploadedFile[];
+      const file = Array.isArray(rawImage) ? rawImage[0] : rawImage;
+      if (!/(jpeg|jpg|png|gif|webp)/.test(file.mimetype)) {
+        return res
+          .status(StatusCodes.BAD_REQUEST)
+          .json({success: false, message: "Invalid image type"});
+      }
+
+      avatarTempPath = file.tempFilePath;
+    }
+
+    const serviceResponse = await userService.updateProfile({
+      firstName,
+      lastName,
+      userId,
+      tempFilePath: avatarTempPath,
+    });
+
+    res.status(serviceResponse.statusCode).json(serviceResponse);
+  }
 
   // idea: future implementation
   public async inviteStaff(req: Request, res: Response, next: NextFunction) {

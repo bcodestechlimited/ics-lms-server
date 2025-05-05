@@ -82,9 +82,8 @@ const CourseSchema = new mongoose.Schema(
     duration: {type: String},
     category: {
       type: String,
-      default: "all",
+      default: "Technology",
       required: true,
-      enum: Object.values(CourseCategory),
     },
     courseDuration: {type: String},
     amount: {type: Number},

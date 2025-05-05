@@ -19,7 +19,7 @@ const BenchmarkSchema = new Schema<ICourseBenchmark>(
       },
     },
     benchmark: {type: Number, required: true},
-    course: {type: Schema.Types.ObjectId, ref: "Course"},
+    course: {type: Schema.Types.ObjectId, ref: "Course", required: true},
   },
   {timestamps: true}
 );

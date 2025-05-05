@@ -43,4 +43,8 @@ const CourseAssessment = mongoose.model<IQuestion>(
   QuestionSchema
 );
 
+QuestionSchema.statics.findWithCorrectAnswers = function () {
+  return this.find().select("+options.isCorrect");
+};
+
 export default CourseAssessment;

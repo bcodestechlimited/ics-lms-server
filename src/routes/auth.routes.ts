@@ -1,5 +1,4 @@
 import {Router} from "express";
-import {check} from "express-validator";
 import {authController} from "../controllers/auth.controller.ts";
 import {userController} from "../controllers/user.controller.ts";
 import {
@@ -23,6 +22,13 @@ router
   .route("/")
   .get(isAuthenticated, authController.getSession)
   .post(validateRequest(RegisterSchema), authController.register);
+
+router.get(
+  "/user-analytics",
+  isAuthenticated,
+  checkUserRole(["admin", "superadmin"]),
+  userController.getUserAnalytics
+);
 
 router.route("/students").get(userController.getAllUsers);
 
@@ -81,9 +87,12 @@ router.get(
 
 router.post("/logout", isAuthenticated, userController.logout);
 
-router.put("/update-avatar", isAuthenticated, [
-  check("image", "Image ID required").isMongoId(),
-]);
+router.put(
+  "/update-profile",
+  apiLimiter,
+  isAuthenticated,
+  authController.updateProfile
+);
 
 router.put(
   "/update-password",
@@ -107,6 +116,6 @@ router.get(
 
 router
   .route("/:id")
-  .get(isAuthenticated, apiLimiter, userController.getAUserById);
+  .get(apiLimiter, isAuthenticated, userController.getAUserById);
 
 export default router;

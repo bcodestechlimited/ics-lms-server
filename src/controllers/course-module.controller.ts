@@ -129,6 +129,12 @@ export class CourseModuleController {
 
     res.status(response.statusCode).json(response);
   }
+
+  public async deleteCourseModule(req: Request, res: Response){
+    const moduleId = req.params.id;
+    const response = await courseModuleService.deleteModule(moduleId);
+    res.status(response.statusCode).json(response);
+  }
 }
 
 export const courseModuleController = new CourseModuleController();

@@ -1,7 +1,9 @@
+import {UploadedFile} from "express-fileupload";
+
 export interface BulkAssignCourseInterface {
   isIcsStaff: boolean;
   durationDays: number;
-  file: Express.Multer.File;
+  file: UploadedFile;
   courseIds: string[];
 }
 

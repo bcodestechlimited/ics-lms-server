@@ -178,9 +178,20 @@ class CourseService {
     userRole: string | undefined
   ) {
     try {
-      const course = await Course.findById(courseId).populate(
-        "course_modules course_price course_benchmark"
-      );
+      let course;
+      console.log({userRole});
+      if (["admin", "superadmin"].includes(userRole as string)) {
+        course = await Course.findById(courseId)
+          .populate({
+            path: "course_assessment",
+            select: "+options.isCorrect",
+          })
+          .populate("course_modules course_price course_benchmark");
+      } else {
+        course = await Course.findById(courseId).populate(
+          "course_modules course_price course_benchmark"
+        );
+      }
       if (!course) {
         return ServiceResponse.failure(
           "No course found",
@@ -252,6 +263,101 @@ class CourseService {
     };
   }
 
+  public async fetchAllCoursesCreatedOverTime() {
+    const data = await Course.aggregate([
+      {$match: {isPublished: true}},
+      {
+        $group: {
+          _id: {
+            year: {$year: "$createdAt"},
+            month: {$month: "$createdAt"},
+          },
+          count: {$sum: 1},
+        },
+      },
+      {$sort: {"_id.year": 1, "_id.month": 1}},
+      {
+        $project: {
+          date: {
+            $concat: [{$toString: "$_id.year"}, "-", {$toString: "$_id.month"}],
+          },
+          count: 1,
+          _id: 0,
+        },
+      },
+    ]);
+
+    return ServiceResponse.success(
+      "Successfully fetched courses created over time",
+      data,
+      StatusCodes.OK
+    );
+  }
+
+  public async fetchAllCoursesByCategory() {
+    const data = await Course.aggregate([
+      {$group: {_id: "$category", count: {$sum: 1}}},
+    ]);
+
+    return ServiceResponse.success(
+      "Successfully fetched courses by category",
+      data,
+      StatusCodes.OK
+    );
+  }
+
+  public async fetchSkillLevelDistribution() {
+    const data = await Course.aggregate([
+      {$group: {_id: "$skillLevel", count: {$sum: 1}}},
+    ]);
+
+    return ServiceResponse.success(
+      "Successfully fetched skill level distribution",
+      data,
+      StatusCodes.OK
+    );
+  }
+
+  public async fetchEnrollmentCounts() {
+    const data = await Course.aggregate([
+      {
+        $project: {
+          title: 1,
+          enrollmentCount: {
+            $size: {$ifNull: ["$participants", []]}, // ← default to empty array
+          },
+        },
+      },
+    ]);
+
+    return ServiceResponse.success(
+      "Successfully fetched all course enrollments",
+      data,
+      StatusCodes.OK
+    );
+  }
+
+  public async fetchTopEnrolledCourses() {
+    const data = await Course.aggregate([
+      {
+        $project: {
+          title: 1,
+          enrollmentCount: {
+            $size: {$ifNull: ["$participants", []]}, // ← default to empty array
+          },
+        },
+      },
+      {$sort: {enrollmentCount: -1}},
+      {$limit: 5},
+    ]);
+
+    return ServiceResponse.success(
+      "Successfully fetched top enrolled courses",
+      data,
+      StatusCodes.OK
+    );
+  }
+
   public async updateCourse(courseId: string, payload: Record<string, any>) {
     const course = await Course.findByIdAndUpdate(courseId, payload, {
       new: true,
@@ -270,6 +376,7 @@ class CourseService {
     };
   }
 
+  // note: this what I am working with to update the course benchmark, what I want to do now is that if the benchmark does not exist, I want a benchmark to be created for it, so "upsert"
   public async updateCourseBenchmark(
     payload: {retakes: number; benchmark: number},
     id: string
