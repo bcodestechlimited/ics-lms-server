@@ -1,5 +1,4 @@
 import express from "express";
-import multer from "multer";
 import {courseController} from "../controllers/course.controller.ts";
 import {checkUserRole, isAuthenticated} from "../Middlewares/Auth.ts";
 import {apiLimiter} from "../Middlewares/RateLimiter.ts";
@@ -12,7 +11,6 @@ import {
 } from "../Schema/course.schema.ts";
 
 const router = express.Router();
-const upload = multer();
 
 router.get(
   "/course-published",
@@ -61,7 +59,7 @@ router
 
 router.post(
   "/assign-courses-to-staff",
-  upload.single("file"),
+  apiLimiter,
   isAuthenticated,
   checkUserRole(["admin", "superadmin"]),
   courseController.bulkAssigningOfCourses

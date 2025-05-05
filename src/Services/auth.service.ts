@@ -18,7 +18,7 @@ class AuthService {
       const user = await User.findOne({email})
         .populate("password")
         .select(
-          "password firstName lastName email _id role privilege isEmailVerified"
+          "password firstName lastName email _id role privilege isEmailVerified isActive"
         )
         .lean();
       if (!user) {
@@ -55,6 +55,7 @@ class AuthService {
           firstName: user.firstName,
           lastName: user.lastName,
           role: user.role,
+          isActive: user.isActive,
         },
       };
       return ServiceResponse.success("Success", responseObject, StatusCodes.OK);

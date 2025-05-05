@@ -7,10 +7,11 @@ import {
   AdminAcceptUserRequestForCourseExtensionSchema,
   AdminRejectUserRequestForCourseExtensionSchema,
 } from "../Schema/admin.schema";
+import {authController} from "../controllers/auth.controller";
+import {apiLimiter} from "../Middlewares/RateLimiter";
 
 const router = Router();
 
-// test: this endpoint
 router.post(
   "/upload-certificate-template",
   isAuthenticated,
@@ -18,9 +19,9 @@ router.post(
   adminController.uploadCertificateTemplate
 );
 
-
 router.get(
   "/user-request-for-course-extension",
+  apiLimiter,
   isAuthenticated,
   checkUserRole(["admin", "superadmin"]),
   adminController.getUserRequestForCourseExtension
@@ -28,6 +29,7 @@ router.get(
 
 router.post(
   "/accept-request-for-course-extension",
+  apiLimiter,
   validateRequest(AdminAcceptUserRequestForCourseExtensionSchema),
   isAuthenticated,
   checkUserRole(["admin", "superadmin"]),
@@ -36,6 +38,7 @@ router.post(
 
 router.patch(
   "/reject-request-for-course-extension",
+  apiLimiter,
   validateRequest(AdminRejectUserRequestForCourseExtensionSchema),
   isAuthenticated,
   checkUserRole(["admin", "superadmin"]),
@@ -47,6 +50,14 @@ router.post(
   isAuthenticated,
   checkUserRole(["admin", "superadmin"]),
   certificateController.testIssueCertificate
+);
+
+router.patch(
+  "/users/:id/toggle-status",
+  apiLimiter,
+  isAuthenticated,
+  checkUserRole(["admin", "superadmin"]),
+  authController.suspendUserAccount
 );
 
 export default router;
