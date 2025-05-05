@@ -1,9 +1,12 @@
-import { CourseProgressInterface } from "../models/progress.model";
+import {boolean} from "zod";
+import {CourseProgressInterface} from "../models/progress.model";
 
 class UserDto {
   id: string;
   firstName: string;
   lastName: string;
+  status: boolean;
+  isActive: boolean;
   courses: any;
   progress: CourseProgressInterface[];
   constructor(user: any) {
@@ -14,6 +17,8 @@ class UserDto {
       title: course.title,
       description: course.description,
     }));
+    this.status = user.status;
+    this.isActive = user.isActive;
     this.progress = user.progress.map((progress: CourseProgressInterface) => ({
       id: progress._id,
       status: progress.status,

@@ -67,6 +67,7 @@ export const isLocalAuthenticated = async (
       isAdmin: userResponse.isAdmin,
       isEmailVerified: userResponse.isEmailVerified,
       avatar: userResponse.avatar as string,
+      isActive: userResponse.isActive as boolean,
     };
 
     req.user = userObj;
@@ -131,6 +132,7 @@ export const isAuthenticated = async (
       isAdmin: userResponse.isAdmin,
       isEmailVerified: userResponse.isEmailVerified,
       avatar: userResponse.avatar as string,
+      isActive: userResponse.isActive as boolean,
     };
 
     req.user = userObj;

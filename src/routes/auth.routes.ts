@@ -23,6 +23,13 @@ router
   .get(isAuthenticated, authController.getSession)
   .post(validateRequest(RegisterSchema), authController.register);
 
+router.get(
+  "/user-analytics",
+  isAuthenticated,
+  checkUserRole(["admin", "superadmin"]),
+  userController.getUserAnalytics
+);
+
 router.route("/students").get(userController.getAllUsers);
 
 router.post("/activate-account", apiLimiter, authController.activateAccount);
@@ -80,10 +87,6 @@ router.get(
 
 router.post("/logout", isAuthenticated, userController.logout);
 
-// router.put("/update-avatar", isAuthenticated, [
-//   check("image", "Image ID required").isMongoId(),
-// ]);
-
 router.put(
   "/update-profile",
   apiLimiter,
@@ -113,6 +116,6 @@ router.get(
 
 router
   .route("/:id")
-  .get(isAuthenticated, apiLimiter, userController.getAUserById);
+  .get(apiLimiter, isAuthenticated, userController.getAUserById);
 
 export default router;

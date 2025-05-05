@@ -13,11 +13,13 @@ class AuthController {
     const {email, password} = req.body;
     const serviceResponse = await authService.login(email, password);
 
-    if (!serviceResponse?.responseObject?.token) {
-      return res
-        .status(401)
-        .json({message: "Unauthorized, Login to access resource"});
-    }
+    console.log({serviceResponse});
+
+    // if (!serviceResponse?.responseObject?.token) {
+    //   return res
+    //     .status(401)
+    //     .json({message: "Unauthorized, Login to access resource"});
+    // }
     res.cookie("accessToken", serviceResponse?.responseObject?.token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -59,8 +61,13 @@ class AuthController {
 
   public async forgotPassword(req: Request, res: Response) {
     const {email} = req.body;
-    console.log({email});
-    const resetUrl = `${APP_CONFIG.CLIENT_FRONTEND_BASE_URL}/auth/reset-password`;
+    const role = req.query?.role as string;
+    let resetUrl: string;
+    if (["admin", "superadmin"].includes(role)) {
+      resetUrl = `${APP_CONFIG.ADMIN_FRONTEND_BASE_URL}/auth/reset-password`;
+    } else {
+      resetUrl = `${APP_CONFIG.CLIENT_FRONTEND_BASE_URL}/auth/reset-password`;
+    }
     const serviceResponse = await authService.forgotPassword(email, resetUrl);
 
     res.status(serviceResponse.statusCode).json(serviceResponse);
@@ -110,11 +117,20 @@ class AuthController {
   }
 
   // todo: implement this service (write the code)
-  public async suspendUserAccount() {}
+  public async suspendUserAccount(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) {
+    const {id} = req.params;
+    const serviceResponse = await userService.toggleAccountStatus(id);
 
-  public async updateProfile(r, res: Response) {
-    const req = r as RequestWithCourseImage;
-    const {firstName, lastName, userId} = req.body;
+    res.status(serviceResponse.statusCode).json(serviceResponse);
+  }
+
+  public async updateProfile(req: ExtendedRequest, res: Response) {
+    const {firstName, lastName} = req.body;
+    const userId = req.user && req.user._id;
 
     let avatarTempPath: string | undefined;
     if (req.files?.avatar) {

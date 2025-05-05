@@ -94,7 +94,9 @@ class CourseController {
         ...filters
       } = req.query;
 
-      const query: Record<string, any> = {};
+      const query: Record<string, any> = {
+        isPublished: true
+      };
       if (search) {
         query.$or = [
           {title: {$regex: search, $options: "i"}},
@@ -284,6 +286,7 @@ class CourseController {
         res
       );
     } catch (error) {
+      console.log("error", error);
       handleServiceResponse(
         ServiceResponse.failure(
           "Failed to create course assessment",
@@ -472,7 +475,8 @@ class CourseController {
 
   async getCourseById(req: ExtendedRequest, res: Response, next: NextFunction) {
     const courseId = req.params.id;
-    const userRole = req.query.role as string;
+    const userRole = req.query?.role as string;
+    console.log({userRole});
     const serviceResponse = await courseService.fetchCourseById(
       courseId,
       userRole
@@ -572,6 +576,7 @@ class CourseController {
     }
   }
 
+  // note: edit course benchmark
   async editCourseBenchmark(req: Request, res: Response) {
     try {
       const benchmark_id = req.body.benchmark_id;
@@ -809,7 +814,26 @@ class CourseController {
     res: Response,
     next: NextFunction
   ) {
-    const file = req.file;
+    if (!req.files?.file) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({message: "No file uploaded"});
+    }
+    const raw = req.files.file as UploadedFile | UploadedFile[];
+    const uploadFile = Array.isArray(raw) ? raw[0] : raw;
+
+    const allowed = [
+      "text/csv",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "application/vnd.ms-excel",
+    ];
+    if (!allowed.includes(uploadFile.mimetype)) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        message:
+          "Invalid file type. Please upload a CSV or Excel (.xlsx/.xls) file.",
+      });
+    }
+
     const rawCourses = req.body["courseIds[]"] ?? req.body.courseIds;
     const durationDays = req.body.durationDays;
     const isIcsStaff = req.body.isIcsStaff;
@@ -827,11 +851,9 @@ class CourseController {
 
     try {
       const validated = bulkAssignCourseSchema.parse(normalizedBody);
-      if (!file) {
-        return res.status(400).json({message: "No file uploaded"});
-      }
+
       const serviceResponse = await courseService.bulkAssigningOfCourses({
-        file,
+        file: uploadFile,
         courseIds: validated.courseIds,
         durationDays: durationDays,
         isIcsStaff: isIcsStaff,
@@ -866,6 +888,8 @@ class CourseController {
 
     res.status(serviceResponse.statusCode).json(serviceResponse);
   }
+
+  
 }
 
 const courseController = new CourseController();

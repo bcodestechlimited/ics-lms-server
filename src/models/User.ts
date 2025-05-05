@@ -91,6 +91,7 @@ export interface IUserBase {
   staffEmailInvitationSentAt: Date;
   createdAt?: Date;
   updatedAt?: Date;
+  isActive: Boolean;
 }
 
 export interface IUserMethods {
@@ -227,7 +228,7 @@ const UserSchema = new mongoose.Schema(
     status: {
       type: Boolean,
       index: true,
-      default: false,
+      default: true,
     },
     is2FAEnabled: {
       type: String,
@@ -258,8 +259,8 @@ const UserSchema = new mongoose.Schema(
         },
         isAssigned: {
           type: Boolean,
-          default: false
-        }
+          default: false,
+        },
       },
     ],
     expiredCourses: [
@@ -299,6 +300,10 @@ const UserSchema = new mongoose.Schema(
       enum: Object.values(EmailInvitationEnum),
     },
     staffEmailInvitationSentAt: {type: Date, select: false},
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
   },
   {timestamps: true}
 );

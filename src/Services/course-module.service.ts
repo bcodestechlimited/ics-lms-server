@@ -1,14 +1,14 @@
 import createDOMPurify from "dompurify";
+import {UploadedFile} from "express-fileupload";
 import {StatusCodes} from "http-status-codes";
 import {JSDOM} from "jsdom";
 import {APP_CONFIG} from "../config/app.config";
 import {ProcessedSection} from "../interfaces/course-module.interface";
 import Course from "../models/Course";
 import {CourseModule} from "../models/course-module.model";
+import Progress, {CourseStatusEnum} from "../models/progress.model";
 import {uploadToCloudinary} from "../utils/cloudinary.utils";
 import {ServiceResponse} from "../utils/service-response";
-import Progress, {CourseStatusEnum} from "../models/progress.model";
-import {UploadedFile} from "express-fileupload";
 
 class CourseModuleService {
   /**
@@ -304,6 +304,26 @@ class CourseModuleService {
       "Progress updated successfully.",
       {data: progressDoc},
       StatusCodes.OK
+    );
+  }
+
+  public async deleteModule(moduleId: string) {
+    console.log({moduleId});
+    const response = await CourseModule.findByIdAndDelete({
+      _id: moduleId,
+    });
+    console.log("response", response);
+    if (!response) {
+      return ServiceResponse.failure(
+        "Course module not found",
+        null,
+        StatusCodes.BAD_REQUEST
+      );
+    }
+    return ServiceResponse.success(
+      "Module deleted successfully.",
+      response,
+      StatusCodes.ACCEPTED
     );
   }
 }

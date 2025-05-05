@@ -25,4 +25,5 @@ export type UserType = ExtendedRequest["user"];
 export type LocalUserType = ExtendedRequest["user"] & {
   isAdmin?: boolean;
   isEmailVerified?: boolean;
+  isActive: boolean;
 };

@@ -301,6 +301,27 @@ class UserService {
       );
     }
   }
+
+  // note: tie the status here to isEmailVerified -> in the future when the user has not verified their email, the status will be inactive
+  public async toggleAccountStatus(userId: string) {
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return ServiceResponse.failure(
+        "User not found",
+        null,
+        StatusCodes.NOT_FOUND
+      );
+    }
+
+    user.isActive = !user.isActive;
+    await user.save();
+    return ServiceResponse.success(
+      "Account status updated",
+      user,
+      StatusCodes.OK
+    );
+  }
 }
 
 export const userService = new UserService();
