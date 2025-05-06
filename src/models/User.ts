@@ -315,8 +315,6 @@ UserSchema.methods.generatePasswordResetToken = function () {
   this.passwordResetToken = hashedToken;
   this.passwordResetTokenExpires = Date.now() + 20 * 60 * 1000;
 
-  console.log("this.user", this);
-
   return token;
 };
 

@@ -18,7 +18,7 @@ class AuthService {
       const user = await User.findOne({email})
         .populate("password")
         .select(
-          "password firstName lastName email _id role privilege isEmailVerified isActive"
+          "password firstName lastName email _id role privilege isEmailVerified isActive passwordVersion"
         )
         .lean();
       if (!user) {
@@ -41,6 +41,7 @@ class AuthService {
         userId: user._id.toString(),
         passwordVersion: user.passwordVersion,
       };
+
       const accessToken = generateUserAccessToken(payload);
       if (!accessToken) {
         return ServiceResponse.failure("Error", null, StatusCodes.BAD_REQUEST);
@@ -129,7 +130,6 @@ class AuthService {
         StatusCodes.CREATED
       );
     } catch (error) {
-      console.log("error", error);
       return ServiceResponse.failure(
         "Internal Server Error",
         null,
@@ -428,7 +428,6 @@ class AuthService {
         StatusCodes.OK
       );
     } catch (error) {
-      console.log("error", error);
       return ServiceResponse.failure(
         "Internal server error",
         null,

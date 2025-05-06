@@ -107,7 +107,6 @@ class CertificateService {
         ],
       };
       const emailResponse = await emailService.sendEmailTemplate(emailPayload);
-      console.log({emailResponse});
 
       return ServiceResponse.success(
         "Certificate issued successfully",
@@ -115,7 +114,6 @@ class CertificateService {
         StatusCodes.OK
       );
     } catch (error) {
-      console.log("error", error);
       return ServiceResponse.failure(
         "Failed to issue certificate",
         null,
@@ -182,14 +180,14 @@ class CertificateService {
         ],
       };
       const emailResponse = await emailService.sendEmailTemplate(emailPayload);
-      console.log({emailResponse});
+     
       return ServiceResponse.success(
         "Certificate issued successfully",
         null,
         StatusCodes.OK
       );
     } catch (error) {
-      console.log("error", error);
+    
       return ServiceResponse.failure(
         "Failed to issue certificate",
         null,
@@ -242,7 +240,7 @@ class CertificateService {
       }
       return doc.path;
     } catch (error) {
-      console.error("Error fetching certificate template:", error);
+   
       throw new Error("Failed to retrieve certificate template");
     }
   }

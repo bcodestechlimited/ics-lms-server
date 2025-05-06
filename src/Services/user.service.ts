@@ -124,7 +124,6 @@ class UserService {
     }
   }
 
-  // test: api
   public async getUserExpiredCourses(userId: string | mongoose.Types.ObjectId) {
     try {
       const response = await courseService.getUserExpiredCourses(userId);
@@ -134,7 +133,6 @@ class UserService {
         StatusCodes.OK
       );
     } catch (error) {
-      console.log("error", error);
       return ServiceResponse.failure(
         "Internal Server Error",
         null,

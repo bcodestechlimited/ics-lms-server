@@ -83,6 +83,18 @@ class AdminController {
 
     res.status(response.statusCode).json(response);
   }
+
+  public async createAdminAccount(req: Request, res: Response) {
+    const {firstName, lastName, email, password} = req.body;
+    const serviceResponse = await adminService.createAdmin({
+      firstName,
+      lastName,
+      email,
+      password,
+    });
+
+    res.status(serviceResponse.statusCode).json(serviceResponse);
+  }
 }
 
 export const adminController = new AdminController();

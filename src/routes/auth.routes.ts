@@ -25,7 +25,7 @@ router
 
 router.get(
   "/user-analytics",
-  isAuthenticated,
+  isLocalAuthenticated,
   checkUserRole(["admin", "superadmin"]),
   userController.getUserAnalytics
 );
@@ -104,12 +104,12 @@ router.put(
 router.route("/login").post(authController.login);
 
 router.get("/session", isLocalAuthenticated, authController.getSession);
-router.get("/validate-user", isAuthenticated, validateUser);
+router.get("/validate-user", isLocalAuthenticated, validateUser);
 
 router.get(
   "/:id/course-analytics",
   apiLimiter,
-  isAuthenticated,
+  isLocalAuthenticated,
   checkUserRole(["admin", "superadmin"]),
   userController.getUserAnalytics
 );

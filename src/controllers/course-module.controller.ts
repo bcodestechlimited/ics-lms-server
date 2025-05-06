@@ -104,7 +104,6 @@ export class CourseModuleController {
         res
       );
     } catch (error) {
-      console.error("update module error", error);
       return handleServiceResponse(
         ServiceResponse.failure("Failed to update course module", null, 500),
         res

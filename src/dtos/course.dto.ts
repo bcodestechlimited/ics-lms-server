@@ -38,7 +38,6 @@ export class CourseDTO {
       price: course.course_price,
     };
     this.log = function () {
-      console.log(this);
     };
   }
 }
