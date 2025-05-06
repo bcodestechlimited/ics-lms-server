@@ -1,6 +1,10 @@
 import express from "express";
 import {courseController} from "../controllers/course.controller.ts";
-import {checkUserRole, isAuthenticated} from "../Middlewares/Auth.ts";
+import {
+  checkUserRole,
+  isAuthenticated,
+  isLocalAuthenticated,
+} from "../Middlewares/Auth.ts";
 import {apiLimiter} from "../Middlewares/RateLimiter.ts";
 import {uploadCertificate} from "../Middlewares/upload-file.ts";
 import validateRequest from "../Middlewares/validation.middleware.ts";
@@ -52,7 +56,7 @@ router
   .get(courseController.getAllAdminCourses)
   .post(
     apiLimiter,
-    isAuthenticated,
+    isLocalAuthenticated,
     checkUserRole(["admin", "superadmin"]),
     courseController.uploadCourseController
   );
@@ -60,7 +64,7 @@ router
 router.post(
   "/assign-courses-to-staff",
   apiLimiter,
-  isAuthenticated,
+  isLocalAuthenticated,
   checkUserRole(["admin", "superadmin"]),
   courseController.bulkAssigningOfCourses
 );
@@ -68,7 +72,7 @@ router.post(
 router.post(
   "/upload-course-certificate",
   apiLimiter,
-  isAuthenticated,
+  isLocalAuthenticated,
   checkUserRole(["admin", "superadmin"]),
   uploadCertificate,
   courseController.uploadCourseCertificate
@@ -78,7 +82,7 @@ router
   .route("/edit-benchmark")
   .put(
     apiLimiter,
-    isAuthenticated,
+    isLocalAuthenticated,
     checkUserRole(["admin", "superadmin"]),
     courseController.editCourseBenchmark
   );
@@ -87,7 +91,7 @@ router
   .route("/course-assessment")
   .post(
     apiLimiter,
-    isAuthenticated,
+    isLocalAuthenticated,
     validateRequest(CreateCourseAssessmentSchema),
     checkUserRole(["admin", "superadmin"]),
     courseController.createCourseAssessment
@@ -96,7 +100,7 @@ router
 router.post(
   "/course-benchmark",
   apiLimiter,
-  isAuthenticated,
+  isLocalAuthenticated,
   validateRequest(CreateCourseBenchmarkSchema),
   checkUserRole(["admin", "superadmin"]),
   courseController.createCourseBenchmark
@@ -106,14 +110,14 @@ router
   .route("/course-pricing")
   .post(
     apiLimiter,
-    isAuthenticated,
+    isLocalAuthenticated,
     validateRequest(CreateCoursePricingSchema),
     checkUserRole(["admin", "superadmin"]),
     courseController.createCoursePricing
   )
   .patch(
     apiLimiter,
-    isAuthenticated,
+    isLocalAuthenticated,
     checkUserRole(["admin", "superadmin"]),
     courseController.updateCoursePricing
   );
@@ -122,7 +126,7 @@ router
   .route("/:id/publish-course")
   .patch(
     apiLimiter,
-    isAuthenticated,
+    isLocalAuthenticated,
     checkUserRole(["admin", "superadmin"]),
     courseController.publishCourse
   );
@@ -143,7 +147,7 @@ router
   .route("/course-assessment/:id")
   .put(
     apiLimiter,
-    isAuthenticated,
+    isLocalAuthenticated,
     checkUserRole(["admin", "superadmin"]),
     courseController.updateCourseAssessment
   );
@@ -156,14 +160,14 @@ router
   .route("/:id")
   .put(
     apiLimiter,
-    isAuthenticated,
+    isLocalAuthenticated,
     checkUserRole(["admin", "superadmin"]),
     courseController.updateCourseController
   )
   .get(apiLimiter, courseController.getCourseById)
   .delete(
     apiLimiter,
-    isAuthenticated,
+    isLocalAuthenticated,
     checkUserRole(["admin", "superadmin"]),
     courseController.deleteCourse
   );

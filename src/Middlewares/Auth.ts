@@ -39,13 +39,14 @@ export const isLocalAuthenticated = async (
     }
 
     const decoded = verifyUserAccessToken(token);
+
     if (!decoded) {
       return res
         .status(401)
         .json({message: "Unauthorized, Login to access resource"});
     }
 
-    const user = await User.findById(decoded.id);
+    const user = await User.findById(decoded.id).select("+passwordVersion");
     if (!user) {
       return res.status(404).json({message: "User not found", success: false});
     }
@@ -73,7 +74,6 @@ export const isLocalAuthenticated = async (
     req.user = userObj;
     next();
   } catch (error) {
-    console.error("Authentication error", error);
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       message: "Internal Server Error",
     });
@@ -110,7 +110,7 @@ export const isAuthenticated = async (
         .json({message: "Unauthorized, Login to access resource"});
     }
 
-    const user = await User.findById(decoded.id);
+    const user = await User.findById(decoded.id).select("+passwordVersion");
     if (!user) {
       return res.status(404).json({message: "User not found", success: false});
     }
@@ -138,8 +138,6 @@ export const isAuthenticated = async (
     req.user = userObj;
     next();
   } catch (error) {
-    console.error("Authentication Error:", error);
-
     handleServiceResponse(
       ServiceResponse.failure(
         "Internal Server Error",
@@ -154,13 +152,26 @@ export const isAuthenticated = async (
 export const checkUserRole =
   (roles: string[]) =>
   (req: ExtendedRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        message: "Authentication required",
+      });
+    }
+
     const user = req.user as any;
 
-    const hasRole =
-      user?.role &&
-      roles.some((role) => role.includes(user?.role.toLowerCase() as string));
+    if (!user.role) {
+      return res.status(StatusCodes.FORBIDDEN).json({
+        message: "User role not defined",
+      });
+    }
 
-    if (!hasRole) {
+    const userRole = user.role.toLowerCase();
+    const normalizedAllowedRoles = roles.map((role) => role.toLowerCase());
+
+    const hasPermission = normalizedAllowedRoles.includes(userRole);
+
+    if (!hasPermission) {
       return res.status(StatusCodes.FORBIDDEN).json({
         message: "You do not have permission to access this resource",
       });

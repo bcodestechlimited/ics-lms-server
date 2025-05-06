@@ -286,7 +286,6 @@ class CourseController {
         res
       );
     } catch (error) {
-      console.log("error", error);
       handleServiceResponse(
         ServiceResponse.failure(
           "Failed to create course assessment",
@@ -476,7 +475,7 @@ class CourseController {
   async getCourseById(req: ExtendedRequest, res: Response, next: NextFunction) {
     const courseId = req.params.id;
     const userRole = req.query?.role as string;
-    console.log({userRole});
+   
     const serviceResponse = await courseService.fetchCourseById(
       courseId,
       userRole

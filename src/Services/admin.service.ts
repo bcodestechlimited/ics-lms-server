@@ -1,22 +1,20 @@
 import dayjs from "dayjs";
+import {UploadedFile} from "express-fileupload";
+import fs from "fs";
 import {StatusCodes} from "http-status-codes";
 import mongoose from "mongoose";
+import path from "path";
 import {APP_CONFIG} from "../config/app.config";
 import {AdminQueryOptions} from "../interfaces/admin.interface";
+import CertificateTemplateModel from "../models/certificate-template.model";
 import Course from "../models/Course";
-import User from "../models/User";
+import User, {UserRole} from "../models/User";
 import UserCourseExtensionRequest, {
   CourseRequestStatus,
 } from "../models/user-request.model";
-import {
-  ServiceResponse,
-  ServiceResponseSchema,
-} from "../utils/service-response";
+import {ServiceResponse} from "../utils/service-response";
 import {emailService} from "./mail.service";
-import {UploadedFile} from "express-fileupload";
-import path from "path";
-import fs from "fs";
-import CertificateTemplateModel from "../models/certificate-template.model";
+import bcrypt from "bcryptjs";
 
 class AdminService {
   // test : this service
@@ -263,13 +261,51 @@ class AdminService {
         StatusCodes.CREATED
       );
     } catch (error) {
-      console.error("Certificate template upload error:", error);
       return ServiceResponse.failure(
         "Failed to upload certificate template",
         null,
         StatusCodes.INTERNAL_SERVER_ERROR
       );
     }
+  }
+
+  public async createAdmin({
+    firstName,
+    lastName,
+    email,
+    password,
+  }: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    password: string;
+  }) {
+    const exists = await User.findOne({email});
+    if (exists) {
+      return ServiceResponse.failure(
+        "Email already in use",
+        null,
+        StatusCodes.BAD_REQUEST
+      );
+    }
+
+    const salt = await bcrypt.genSalt(12)
+    const hashed = await bcrypt.hash(password, salt);
+    const admin = new User({
+      firstName,
+      lastName,
+      email,
+      password: hashed,
+      isAdmin: true,
+      role: UserRole.ADMIN,
+      status: true,
+      isEmailVerified: true,
+      isActive: true
+    });
+
+    await admin.save()
+
+    return ServiceResponse.success("Admin account created", admin, StatusCodes.CREATED)
   }
 }
 

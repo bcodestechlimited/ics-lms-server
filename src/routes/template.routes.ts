@@ -1,14 +1,14 @@
 import express from "express";
-import { templateController } from "../controllers/template.controller";
-import { apiLimiter } from "../Middlewares/RateLimiter";
-import { checkUserRole, isAuthenticated } from "../Middlewares/Auth";
+import {templateController} from "../controllers/template.controller";
+import {checkUserRole, isLocalAuthenticated} from "../Middlewares/Auth";
+import {apiLimiter} from "../Middlewares/RateLimiter";
 
 const router = express.Router();
 
 router.post(
   "/create-from-course/:courseId",
   apiLimiter,
-  isAuthenticated,
+  isLocalAuthenticated,
   checkUserRole(["admin", "superadmin"]),
   templateController.createTemplateFromCourse
 );
@@ -16,7 +16,7 @@ router.post(
 router.post(
   "/:templateId/create-course",
   apiLimiter,
-  isAuthenticated,
+  isLocalAuthenticated,
   checkUserRole(["admin", "superadmin"]),
   templateController.createCourseFromTemplate
 );
@@ -24,7 +24,7 @@ router.post(
 router.get(
   "/",
   apiLimiter,
-  isAuthenticated,
+  isLocalAuthenticated,
   checkUserRole(["admin", "superadmin"]),
   templateController.getAllTemplates
 );
@@ -32,7 +32,7 @@ router.get(
 router.get(
   "/:id",
   apiLimiter,
-  isAuthenticated,
+  isLocalAuthenticated,
   checkUserRole(["admin", "superadmin"]),
   templateController.getTemplateById
 );

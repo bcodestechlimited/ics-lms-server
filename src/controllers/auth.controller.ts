@@ -1,31 +1,32 @@
 import "dotenv/config";
 import {NextFunction, Request, Response} from "express";
+import {UploadedFile} from "express-fileupload";
 import {StatusCodes} from "http-status-codes";
 import {authService} from "../Services/auth.service";
+import {userService} from "../Services/user.service";
 import {APP_CONFIG} from "../config/app.config";
 import {ExtendedRequest} from "../interfaces/auth.interface";
-import {userService} from "../Services/user.service";
-import {RequestWithCourseImage} from "../interfaces/query";
-import {UploadedFile} from "express-fileupload";
 
 class AuthController {
   public async login(req: Request, res: Response, next: NextFunction) {
     const {email, password} = req.body;
+    const role = req.query?.role as string;
+
     const serviceResponse = await authService.login(email, password);
 
-    console.log({serviceResponse});
-
-    // if (!serviceResponse?.responseObject?.token) {
-    //   return res
-    //     .status(401)
-    //     .json({message: "Unauthorized, Login to access resource"});
-    // }
-    res.cookie("accessToken", serviceResponse?.responseObject?.token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 1000 * 60 * 60 * 24,
-    });
+    if (!serviceResponse?.responseObject?.token) {
+      return res
+        .status(401)
+        .json({message: "Unauthorized, Login to access resource"});
+    }
+    if (!role) {
+      res.cookie("accessToken", serviceResponse?.responseObject?.token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 1000 * 60 * 60 * 24,
+      });
+    }
     res.status(serviceResponse?.statusCode).json(serviceResponse);
   }
 
@@ -75,7 +76,7 @@ class AuthController {
 
   public async resetPassword(req: Request, res: Response) {
     const {token, newPassword} = req.body;
-    console.log(token, newPassword);
+
     const serviceResponse = await authService.resetPassword(token, newPassword);
 
     res.status(serviceResponse.statusCode).json(serviceResponse);

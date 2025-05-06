@@ -64,7 +64,6 @@ class TemplateController {
         res
       );
     } catch (error) {
-      console.log("error", error);
       handleServiceResponse(
         ServiceResponse.failure(
           "Internal Server Error",

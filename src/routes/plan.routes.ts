@@ -1,9 +1,9 @@
-import { Router } from "express";
-import { planController } from "../controllers/plan.controller";
-import { apiLimiter } from "../Middlewares/RateLimiter";
-import { checkUserRole, isAuthenticated } from "../Middlewares/Auth";
+import {Router} from "express";
+import {planController} from "../controllers/plan.controller";
+import {checkUserRole, isLocalAuthenticated} from "../Middlewares/Auth";
+import {apiLimiter} from "../Middlewares/RateLimiter";
 import validateRequest from "../Middlewares/validation.middleware";
-import { createPlanSchema, updatePlanSchema } from "../Schema/plan.schema";
+import {createPlanSchema, updatePlanSchema} from "../Schema/plan.schema";
 
 const router = Router();
 
@@ -11,14 +11,14 @@ router
   .route("/")
   .get(
     apiLimiter,
-    isAuthenticated,
+    isLocalAuthenticated,
     checkUserRole(["admin", "superadmin"]),
     planController.getPlans
   )
   .post(
     apiLimiter,
     validateRequest(createPlanSchema),
-    isAuthenticated,
+    isLocalAuthenticated,
     checkUserRole(["admin", "superadmin"]),
     planController.createPlan
   );
@@ -28,16 +28,15 @@ router
   .put(
     apiLimiter,
     validateRequest(updatePlanSchema),
-    isAuthenticated,
+    isLocalAuthenticated,
     checkUserRole(["admin", "superadmin"]),
     planController.editPlan
   )
   .delete(
     apiLimiter,
-    isAuthenticated,
+    isLocalAuthenticated,
     checkUserRole(["admin", "superadmin"]),
     planController.deletePlan
   );
-
 
 export default router;

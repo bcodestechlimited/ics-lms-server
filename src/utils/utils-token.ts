@@ -28,17 +28,26 @@ const generateUserAccessToken = ({
   passwordVersion: number;
 }): string | null => {
   try {
-    return jwt.sign(
+    const token = jwt.sign(
       {id: userId, passwordVersion: passwordVersion},
-      APP_CONFIG.ACCESS_TOKEN_SECRET,
+      APP_CONFIG.ACCESS_TOKEN_SECRET as string,
       {
         expiresIn: "10d",
       }
     );
+
+    return token;
   } catch (error) {
     return null;
   }
 };
+
+interface AccessTokenPayload {
+  id: string;
+  passwordVersion: number;
+  iat: number;
+  exp: number;
+}
 
 const verifyUserAccessToken = (
   token: string
@@ -47,7 +56,7 @@ const verifyUserAccessToken = (
     const decoded = jwt.verify(
       token,
       APP_CONFIG.ACCESS_TOKEN_SECRET
-    ) as JwtPayload;
+    ) as AccessTokenPayload;
 
     return {id: decoded.id, passwordVersion: decoded.passwordVersion};
   } catch (error) {

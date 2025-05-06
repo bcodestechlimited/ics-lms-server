@@ -179,7 +179,7 @@ class CourseService {
   ) {
     try {
       let course;
-      console.log({userRole});
+
       if (["admin", "superadmin"].includes(userRole as string)) {
         course = await Course.findById(courseId)
           .populate({
@@ -210,7 +210,6 @@ class CourseService {
         StatusCodes.OK
       );
     } catch (error) {
-      console.log("error", error);
       return ServiceResponse.failure(
         "Internal Server Error",
         null,
@@ -431,7 +430,7 @@ class CourseService {
       const questions = await CourseAssessment.find({courseId}).select(
         "+options.isCorrect"
       );
-      // console.log("questions", questions);
+     
       if (!questions.length) {
         await session.abortTransaction();
         return ServiceResponse.failure(
@@ -545,7 +544,6 @@ class CourseService {
         StatusCodes.OK
       );
     } catch (error) {
-      console.log("error", error);
       await session.abortTransaction();
       return ServiceResponse.failure(
         "Internal Server Error",

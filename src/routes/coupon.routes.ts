@@ -1,6 +1,10 @@
 import {Router} from "express";
 import {couponController} from "../controllers/coupon.controller";
-import {checkUserRole, isAuthenticated} from "../Middlewares/Auth";
+import {
+  checkUserRole,
+  isAuthenticated,
+  isLocalAuthenticated,
+} from "../Middlewares/Auth";
 import {apiLimiter} from "../Middlewares/RateLimiter";
 import validateRequest from "../Middlewares/validation.middleware";
 import {
@@ -14,7 +18,7 @@ router
   .route("/apply-coupon")
   .post(
     apiLimiter,
-    isAuthenticated,
+    isLocalAuthenticated,
     checkUserRole(["admin", "superadmin"]),
     couponController.applyCoupon
   );
@@ -23,7 +27,7 @@ router
   .route("/analytics")
   .get(
     apiLimiter,
-    isAuthenticated,
+    isLocalAuthenticated,
     checkUserRole(["admin", "superadmin"]),
     couponController.getCouponAnalytics
   );
@@ -32,7 +36,7 @@ router
   .route("/edit-coupon")
   .put(
     apiLimiter,
-    isAuthenticated,
+    isLocalAuthenticated,
     checkUserRole(["admin", "superadmin"]),
     couponController.editCoupon
   );
@@ -51,7 +55,7 @@ router
   .route("/update-status")
   .patch(
     apiLimiter,
-    isAuthenticated,
+    isLocalAuthenticated,
     checkUserRole(["admin", "superadmin"]),
     couponController.updateCouponStatus
   );
@@ -61,13 +65,13 @@ router
   .post(
     apiLimiter,
     validateRequest(CreateCouponSchema),
-    isAuthenticated,
+    isLocalAuthenticated,
     checkUserRole(["admin", "superadmin"]),
     couponController.createCoupon
   )
   .get(
     apiLimiter,
-    isAuthenticated,
+    isLocalAuthenticated,
     checkUserRole(["admin", "superadmin"]),
     couponController.getCoupons
   );
@@ -76,7 +80,7 @@ router
   .route("/:id/users")
   .get(
     apiLimiter,
-    isAuthenticated,
+    isLocalAuthenticated,
     checkUserRole(["admin", "superadmin"]),
     couponController.getCouponUsers
   );
@@ -85,7 +89,7 @@ router
   .route("/:id")
   .get(
     apiLimiter,
-    isAuthenticated,
+    isLocalAuthenticated,
     checkUserRole(["admin", "superadmin"]),
     couponController.getACouponById
   );

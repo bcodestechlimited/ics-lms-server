@@ -1,7 +1,11 @@
 import {Router} from "express";
 import {adminController} from "../controllers/admin.controller";
 import {certificateController} from "../controllers/certificate.controller";
-import {checkUserRole, isAuthenticated} from "../Middlewares/Auth";
+import {
+  checkUserRole,
+  isAuthenticated,
+  isLocalAuthenticated,
+} from "../Middlewares/Auth";
 import validateRequest from "../Middlewares/validation.middleware";
 import {
   AdminAcceptUserRequestForCourseExtensionSchema,
@@ -14,15 +18,23 @@ const router = Router();
 
 router.post(
   "/upload-certificate-template",
-  isAuthenticated,
+  isLocalAuthenticated,
   checkUserRole(["admin", "superadmin"]),
   adminController.uploadCertificateTemplate
+);
+
+router.post(
+  "/create-admin-account",
+  apiLimiter,
+  isLocalAuthenticated,
+  checkUserRole(["superadmin"]),
+  adminController.createAdminAccount
 );
 
 router.get(
   "/user-request-for-course-extension",
   apiLimiter,
-  isAuthenticated,
+  isLocalAuthenticated,
   checkUserRole(["admin", "superadmin"]),
   adminController.getUserRequestForCourseExtension
 );
@@ -31,7 +43,7 @@ router.post(
   "/accept-request-for-course-extension",
   apiLimiter,
   validateRequest(AdminAcceptUserRequestForCourseExtensionSchema),
-  isAuthenticated,
+  isLocalAuthenticated,
   checkUserRole(["admin", "superadmin"]),
   adminController.handleAcceptUserRequestForCourseExtension
 );
@@ -40,14 +52,14 @@ router.patch(
   "/reject-request-for-course-extension",
   apiLimiter,
   validateRequest(AdminRejectUserRequestForCourseExtensionSchema),
-  isAuthenticated,
+  isLocalAuthenticated,
   checkUserRole(["admin", "superadmin"]),
   adminController.handleRejectUserRequestForCourseExtension
 );
 
 router.post(
   "/test-issue-certificate",
-  isAuthenticated,
+  isLocalAuthenticated,
   checkUserRole(["admin", "superadmin"]),
   certificateController.testIssueCertificate
 );
@@ -55,7 +67,7 @@ router.post(
 router.patch(
   "/users/:id/toggle-status",
   apiLimiter,
-  isAuthenticated,
+  isLocalAuthenticated,
   checkUserRole(["admin", "superadmin"]),
   authController.suspendUserAccount
 );

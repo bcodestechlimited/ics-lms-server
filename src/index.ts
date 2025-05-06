@@ -26,6 +26,7 @@ import AdminRouter from "./routes/admin.routes.ts";
 import {startAgenda} from "./Services/scheduler.service.ts";
 import fileUpload from "express-fileupload";
 import analyticsRouter from "./routes/analytics.routes.ts";
+import progressRouter from "./routes/progress.routes.ts";
 
 export const nodeClient = new NodeCache({stdTTL: 100, checkperiod: 120});
 
@@ -113,6 +114,7 @@ app.use(BASE_URL + "/certificates", CertificateRouter);
 app.use(BASE_URL + "/payments", PaymentRoute);
 app.use(BASE_URL + "/admins", AdminRouter);
 app.use(BASE_URL + "/analytics", analyticsRouter);
+app.use(BASE_URL + "/progress", progressRouter);
 app.use(BCT_BASE_URL + "/bct-course", BCTCourseRoute);
 
 // Page not found

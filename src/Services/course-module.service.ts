@@ -308,11 +308,11 @@ class CourseModuleService {
   }
 
   public async deleteModule(moduleId: string) {
-    console.log({moduleId});
+  
     const response = await CourseModule.findByIdAndDelete({
       _id: moduleId,
     });
-    console.log("response", response);
+   
     if (!response) {
       return ServiceResponse.failure(
         "Course module not found",
