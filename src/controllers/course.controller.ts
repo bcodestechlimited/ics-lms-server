@@ -33,6 +33,8 @@ class CourseController {
         order = "desc",
         search,
         fields,
+        topic,
+        rating,
         ...filters
       } = req.query;
       const query: Record<string, any> = {
@@ -45,6 +47,14 @@ class CourseController {
           {description: {$regex: search, $options: "i"}},
         ];
       }
+
+       if (topic) {
+         query.category = topic;
+       }
+      //  if (rating) {
+      //    query.rating = Number(rating);
+      //  }
+
       if (filters.hasOwnProperty("isPublished")) {
         delete filters.isPublished;
       }
@@ -91,11 +101,14 @@ class CourseController {
         sort = "createdAt",
         order = "desc",
         search,
+        topic,
+        fields,
+        rating,
         ...filters
       } = req.query;
 
       const query: Record<string, any> = {
-        isPublished: true
+        isPublished: true,
       };
       if (search) {
         query.$or = [
@@ -105,6 +118,9 @@ class CourseController {
       }
 
       Object.assign(query, filters);
+
+      // const projection = fields ? (fields as string).split(",").join(" ") : "";
+
       const options = {
         page: parseInt(page as string, 10),
         limit: parseInt(limit as string, 10),

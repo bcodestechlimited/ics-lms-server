@@ -61,7 +61,7 @@ const ProgressSchema = new mongoose.Schema(
       {
         module: {
           type: Schema.Types.ObjectId,
-          ref: "Module",
+          ref: "CourseModule",
           required: true,
         },
         completed: {
