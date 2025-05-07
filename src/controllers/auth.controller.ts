@@ -10,7 +10,7 @@ import {ExtendedRequest} from "../interfaces/auth.interface";
 class AuthController {
   public async login(req: Request, res: Response, next: NextFunction) {
     const {email, password} = req.body;
-    const role = req.query?.role as string;
+    // const role = req.query?.role as string;
 
     const serviceResponse = await authService.login(email, password);
 
@@ -19,14 +19,14 @@ class AuthController {
         .status(401)
         .json({message: "Unauthorized, Login to access resource"});
     }
-    if (!role) {
-      res.cookie("accessToken", serviceResponse?.responseObject?.token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 1000 * 60 * 60 * 24,
-      });
-    }
+    // if (!role) {
+    //   res.cookie("accessToken", serviceResponse?.responseObject?.token, {
+    //     httpOnly: true,
+    //     secure: process.env.NODE_ENV === "production",
+    //     sameSite: "lax",
+    //     maxAge: 1000 * 60 * 60 * 24,
+    //   });
+    // }
     res.status(serviceResponse?.statusCode).json(serviceResponse);
   }
 

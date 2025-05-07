@@ -387,8 +387,15 @@ class CourseService {
     return bookmark;
   }
 
-  async fetchCourseAssesments(id: string) {
-    const course_assessment = await CourseAssessment.find({courseId: id});
+  async fetchCourseAssesments(id: string, userRole: string) {
+    const role = userRole.toLowerCase();
+
+    let query = CourseAssessment.find({courseId: id});
+    if (role === "admin" || role === "superadmin") {
+      query = query.select("+options.isCorrect");
+    }
+
+    const course_assessment = await query;
     if (!course_assessment) {
       return {
         success: false,
@@ -430,7 +437,7 @@ class CourseService {
       const questions = await CourseAssessment.find({courseId}).select(
         "+options.isCorrect"
       );
-     
+
       if (!questions.length) {
         await session.abortTransaction();
         return ServiceResponse.failure(
@@ -513,7 +520,6 @@ class CourseService {
         })),
       });
 
-     
       progress.score = scorePercent;
 
       if (passed) {
@@ -547,7 +553,7 @@ class CourseService {
             passed,
             scorePercent,
             currentAttempt: nextAttempt,
-            remainingAttempts:allowedAttempts - nextAttempt,
+            remainingAttempts: allowedAttempts - nextAttempt,
             isFinalAttempt,
             corrections,
           },

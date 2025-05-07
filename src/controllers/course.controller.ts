@@ -48,9 +48,9 @@ class CourseController {
         ];
       }
 
-       if (topic) {
-         query.category = topic;
-       }
+      if (topic) {
+        query.category = topic;
+      }
       //  if (rating) {
       //    query.rating = Number(rating);
       //  }
@@ -489,7 +489,7 @@ class CourseController {
   async getCourseById(req: ExtendedRequest, res: Response, next: NextFunction) {
     const courseId = req.params.id;
     const userRole = req.query?.role as string;
-   
+
     const serviceResponse = await courseService.fetchCourseById(
       courseId,
       userRole
@@ -730,10 +730,11 @@ class CourseController {
     }
   }
 
-  async getCourseAssesments(req: Request, res: Response) {
+  async getCourseAssesments(req: ExtendedRequest, res: Response) {
     try {
       const courseId = req.params.id;
-      const response = await courseService.fetchCourseAssesments(courseId);
+      const userRole = req.user?.role as string
+      const response = await courseService.fetchCourseAssesments(courseId, userRole);
       if (!response.success) {
         return handleServiceResponse(
           ServiceResponse.failure(
@@ -901,8 +902,6 @@ class CourseController {
 
     res.status(serviceResponse.statusCode).json(serviceResponse);
   }
-
-  
 }
 
 const courseController = new CourseController();
