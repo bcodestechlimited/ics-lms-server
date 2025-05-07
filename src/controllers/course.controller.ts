@@ -119,8 +119,6 @@ class CourseController {
 
       Object.assign(query, filters);
 
-      // const projection = fields ? (fields as string).split(",").join(" ") : "";
-
       const options = {
         page: parseInt(page as string, 10),
         limit: parseInt(limit as string, 10),
