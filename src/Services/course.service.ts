@@ -626,6 +626,8 @@ class CourseService {
         );
       }
 
+      console.log({courseBenchmark});
+
       const progress = await Progress.create({
         user: userId,
         course: courseId,

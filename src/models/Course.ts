@@ -110,7 +110,7 @@ const CourseSchema = new mongoose.Schema(
       {
         type: ObjectId,
         ref: "CourseAssessment",
-        autopopulate: false,
+        autopopulate: true,
         index: true,
       },
     ],
