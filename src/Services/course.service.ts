@@ -449,6 +449,8 @@ class CourseService {
       const maxRetakes = benchmarkDoc?.retakes ?? 0;
       const passingScore = benchmarkDoc?.benchmark ?? 50;
 
+      const allowedAttempts = maxRetakes;
+
       const progress = await Progress.findOne({
         user: userId,
         course: courseId,
@@ -460,6 +462,15 @@ class CourseService {
           "No progress found",
           null,
           StatusCodes.NOT_FOUND
+        );
+      }
+
+      if (progress.currentAttempt >= allowedAttempts) {
+        await session.abortTransaction();
+        return ServiceResponse.failure(
+          "No more retakes allowed",
+          null,
+          StatusCodes.FORBIDDEN
         );
       }
 
@@ -484,12 +495,12 @@ class CourseService {
         ((correctCount / questions.length) * 100).toFixed(2)
       );
       const passed = scorePercent >= passingScore;
-      const currentAttempt = progress.assessmentAttempts + 1;
-      const isFinalAttempt = currentAttempt > maxRetakes + 1;
+      const nextAttempt = progress.currentAttempt + 1;
+      const isFinalAttempt = nextAttempt === allowedAttempts;
 
       // Store attempt
       progress.assessmentHistory.push({
-        attempt: currentAttempt,
+        attempt: nextAttempt,
         timestamp: new Date(),
         score: scorePercent,
         passed,
@@ -502,7 +513,7 @@ class CourseService {
         })),
       });
 
-      progress.assessmentAttempts = currentAttempt;
+     
       progress.score = scorePercent;
 
       if (passed) {
@@ -535,8 +546,8 @@ class CourseService {
           data: {
             passed,
             scorePercent,
-            currentAttempt,
-            remainingAttempts: Math.max(maxRetakes + 1 - currentAttempt, 0),
+            currentAttempt: nextAttempt,
+            remainingAttempts:allowedAttempts - nextAttempt,
             isFinalAttempt,
             corrections,
           },
@@ -582,6 +593,15 @@ class CourseService {
         );
       }
 
+      const courseBenchmark = await CourseBenchmark.findOne({course: courseId});
+      if (!courseBenchmark) {
+        return ServiceResponse.failure(
+          "Course benchmark not set",
+          null,
+          StatusCodes.BAD_REQUEST
+        );
+      }
+
       const modules = (courseDoc.course_modules || []).map((moduleId: any) => ({
         module: moduleId,
         completed: false,
@@ -614,6 +634,8 @@ class CourseService {
         score: 0,
         certificateIssued: false,
         status: CourseStatusEnum.IN_PROGRESS,
+        assessmentAttempts: courseBenchmark.retakes,
+        currentAttempt: 0,
       });
       if (!progress) {
         return ServiceResponse.failure(

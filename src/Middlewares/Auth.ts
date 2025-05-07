@@ -170,7 +170,7 @@ export const checkUserRole =
     const normalizedAllowedRoles = roles.map((role) => role.toLowerCase());
 
     const hasPermission = normalizedAllowedRoles.includes(userRole);
-
+    console.log({hasPermission});
     if (!hasPermission) {
       return res.status(StatusCodes.FORBIDDEN).json({
         message: "You do not have permission to access this resource",
