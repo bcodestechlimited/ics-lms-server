@@ -107,6 +107,7 @@ class CertificateService {
         ],
       };
       const emailResponse = await emailService.sendEmailTemplate(emailPayload);
+      console.log("from the service", {emailResponse});
 
       return ServiceResponse.success(
         "Certificate issued successfully",

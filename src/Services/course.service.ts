@@ -526,7 +526,12 @@ class CourseService {
         progress.status = CourseStatusEnum.COMPLETED;
         progress.completedAt = new Date();
         if (!progress.certificateIssued) {
-          await certificateService.issueCertificate(userId, courseId);
+          console.log("the certificate would be issued to the user from here");
+          const emailResponse = await certificateService.issueCertificate(
+            userId,
+            courseId
+          );
+          console.log({emailResponse});
           progress.certificateIssued = true;
         }
       } else if (isFinalAttempt) {
