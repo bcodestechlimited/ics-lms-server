@@ -115,6 +115,7 @@ class CertificateService {
         StatusCodes.OK
       );
     } catch (error) {
+      console.log("error", error);
       return ServiceResponse.failure(
         "Failed to issue certificate",
         null,
