@@ -57,6 +57,7 @@ class AuthService {
           lastName: user.lastName,
           role: user.role,
           isActive: user.isActive,
+          isEmailVerified: user.isEmailVerified,
         },
       };
       return ServiceResponse.success("Success", responseObject, StatusCodes.OK);

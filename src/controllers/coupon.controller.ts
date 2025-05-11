@@ -85,7 +85,6 @@ class CouponController {
       };
       const response = await couponService.fetchCoupons(queryOptions);
 
-      console.log()
       // transform the coupon data sent
       const couponDTO = response.data.map((coupon) => {
         return new CouponDTO(coupon);
@@ -103,7 +102,6 @@ class CouponController {
         res
       );
     } catch (error) {
-    console.log("coupon controller error", error);
       handleServiceResponse(
         ServiceResponse.failure(
           "Internal Server Error",
