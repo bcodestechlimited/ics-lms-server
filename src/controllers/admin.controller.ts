@@ -1,6 +1,7 @@
 import {Request, Response} from "express";
 import fileUpload from "express-fileupload";
 import {adminService} from "../Services/admin.service";
+import {uploadToCloudinary} from "../utils/cloudinary.utils";
 
 class AdminController {
   // test: api to approve user request
@@ -77,8 +78,21 @@ class AdminController {
       ? files.certificate_template[0]
       : files.certificate_template;
 
+    const public_id = `certificate_template_${Date.now()}`;
+    const uploadResult = await uploadToCloudinary(
+      certificateFile.tempFilePath,
+      {
+        resourceType: "raw",
+        folderName: "LMS/certificate_templates",
+        public_id: public_id,
+        format: "pdf",
+        overwrite: true,
+      }
+    );
+
     const response = await adminService.uploadCertificateTemplate(
-      certificateFile
+      uploadResult,
+      public_id
     );
 
     res.status(response.statusCode).json(response);

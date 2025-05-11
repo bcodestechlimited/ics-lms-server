@@ -1,20 +1,18 @@
 import {Document, Schema, model} from "mongoose";
 
 export interface ICertificateTemplate extends Document {
-  path: string;
-  originalName: string;
-  fileType: string;
-  fileSize: number;
+  publicId: string;
+  url: string;
+  uploadedAt: Date;
   updatedAt: Date;
   createdAt: Date;
 }
 
 const CertificateTemplateSchema = new Schema<ICertificateTemplate>(
   {
-    path: {type: String, required: true},
-    originalName: {type: String, required: true},
-    fileType: {type: String, required: true},
-    fileSize: {type: Number, required: true},
+    publicId: {type: String, required: true, unique: true},
+    url: {type: String, required: true},
+    uploadedAt: {type: Date, default: () => new Date()},
   },
   {
     timestamps: true,

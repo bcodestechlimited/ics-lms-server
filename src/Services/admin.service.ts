@@ -214,34 +214,16 @@ class AdminService {
     }
   }
 
-  public async uploadCertificateTemplate(payload: UploadedFile) {
+  public async uploadCertificateTemplate(
+    secure_url: string,
+    public_id: string
+  ) {
     try {
-      const uploadDir = path.resolve(__dirname, "../../uploads/certificate");
-      fs.mkdirSync(uploadDir, {recursive: true});
-
-      const fileExtension = path.extname(payload.name);
-      const filename = `certificate_template_${Date.now()}${fileExtension}`;
-      const filePath = path.join(uploadDir, filename);
-
-      const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-      if (payload.size > MAX_FILE_SIZE) {
-        return ServiceResponse.failure(
-          "File size exceeds 5MB limit",
-          null,
-          StatusCodes.BAD_REQUEST
-        );
-      }
-
-      await payload.mv(filePath);
-      const relativePath = path.join("uploads/certificate", filename);
-
       const updated = await CertificateTemplateModel.findOneAndUpdate(
         {},
         {
-          path: relativePath,
-          originalName: payload.name,
-          fileType: payload.mimetype,
-          fileSize: payload.size,
+          url: secure_url,
+          publicId: public_id,
           updatedAt: new Date(),
         },
         {upsert: true, new: true}
@@ -289,7 +271,7 @@ class AdminService {
       );
     }
 
-    const salt = await bcrypt.genSalt(12)
+    const salt = await bcrypt.genSalt(12);
     const hashed = await bcrypt.hash(password, salt);
     const admin = new User({
       firstName,
@@ -300,12 +282,16 @@ class AdminService {
       role: UserRole.ADMIN,
       status: true,
       isEmailVerified: true,
-      isActive: true
+      isActive: true,
     });
 
-    await admin.save()
+    await admin.save();
 
-    return ServiceResponse.success("Admin account created", admin, StatusCodes.CREATED)
+    return ServiceResponse.success(
+      "Admin account created",
+      admin,
+      StatusCodes.CREATED
+    );
   }
 }
 

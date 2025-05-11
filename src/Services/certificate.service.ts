@@ -10,6 +10,7 @@ import CourseCompletion from "../models/course-completion.model";
 import User from "../models/User";
 import {ServiceResponse} from "../utils/service-response";
 import {emailService} from "./mail.service";
+import axios from "axios";
 
 const UPLOAD_ROOT = path.join(process.cwd(), "uploads");
 const CERT_FOLDER = "certificates";
@@ -182,14 +183,13 @@ class CertificateService {
         ],
       };
       const emailResponse = await emailService.sendEmailTemplate(emailPayload);
-     
+
       return ServiceResponse.success(
         "Certificate issued successfully",
         null,
         StatusCodes.OK
       );
     } catch (error) {
-    
       return ServiceResponse.failure(
         "Failed to issue certificate",
         null,
@@ -198,18 +198,28 @@ class CertificateService {
     }
   }
 
+  private async fetchTemplateBuffer(): Promise<Uint8Array> {
+    const doc = await CertificateTemplate.findOne();
+    if (!doc) {
+      throw new Error("No certificate template configured in DB");
+    }
+
+    const response = await axios.get<ArrayBuffer>(doc.url, {
+      responseType: "arraybuffer",
+    });
+    return new Uint8Array(response.data);
+  }
+
   public async generatePDF(
     studentName: string,
     courseTitle: string,
     issueDate: string
   ): Promise<Buffer> {
     // 1. Load the form-enabled template
-    const templatePath = await this.getTemplatePath();
-    const templateBytes = await fs.readFile(templatePath);
-    const uint8Array = new Uint8Array(templateBytes);
-    const pdfDoc = await PDFDocument.load(uint8Array);
+    const templateBuffer = await this.fetchTemplateBuffer();
 
     // 2. Grab the AcroForm
+    const pdfDoc = await PDFDocument.load(templateBuffer);
     const form = pdfDoc.getForm();
 
     // 3. Fill each field by name
@@ -225,27 +235,26 @@ class CertificateService {
     return Buffer.from(pdfBytes);
   }
 
-  private async getTemplatePath() {
-    try {
-      const doc = await CertificateTemplate.findOne();
-      if (!doc) {
-        throw new Error("No certificate template found");
-      }
+  // private async getTemplatePath() {
+  //   try {
+  //     const doc = await CertificateTemplate.findOne();
+  //     if (!doc) {
+  //       throw new Error("No certificate template found");
+  //     }
 
-      // Verify the file exists
-      try {
-        await fs.access(doc.path, fs.constants.R_OK);
-      } catch {
-        throw new Error(
-          `Certificate template file not found or unreadable at path: ${doc.path}`
-        );
-      }
-      return doc.path;
-    } catch (error) {
-   
-      throw new Error("Failed to retrieve certificate template");
-    }
-  }
+  //     // Verify the file exists
+  //     try {
+  //       await fs.access(doc.path, fs.constants.R_OK);
+  //     } catch {
+  //       throw new Error(
+  //         `Certificate template file not found or unreadable at path: ${doc.path}`
+  //       );
+  //     }
+  //     return doc.path;
+  //   } catch (error) {
+  //     throw new Error("Failed to retrieve certificate template");
+  //   }
+  // }
 
   public async fetchStudentsWithIssuedCertificate({
     options,

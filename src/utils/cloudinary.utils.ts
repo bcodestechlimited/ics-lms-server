@@ -4,7 +4,13 @@ import fs from "fs";
 
 export const uploadToCloudinary = async (
   tempFilePath: string,
-  options: { folderName: string; resourceType: "image" | "video" | "raw" }
+  options: {
+    folderName: string;
+    resourceType: "image" | "video" | "raw";
+    format?: string;
+    overwrite?: boolean;
+    public_id?: string;
+  }
 ) => {
   try {
     cloudinary.config({
@@ -28,7 +34,7 @@ export const uploadToCloudinary = async (
 
     return result.secure_url;
   } catch (error) {
-    console.log({ error });
+    console.log({error});
     throw error;
   }
 };
