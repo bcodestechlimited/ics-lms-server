@@ -3,17 +3,6 @@ import autopopulate from "mongoose-autopopulate";
 import paginator from "mongoose-paginate-v2";
 import {ICoursePricing} from "./course-pricing.model";
 
-export enum CourseCategory {
-  TECHNOLOGY = "technology",
-  WEB_DEVELOPMENT = "web development",
-  MOBILE_DEVELOPMENT = "mobile development",
-  DATA_SCIENCE = "data science",
-  DESIGN = "design",
-  BUSINESS = "business",
-  MARKETING = "marketing",
-  PRODUCT_MANAGMENT = "product management",
-  ALL = "all",
-}
 
 export enum SkillLevel {
   BEGINNER = "beginner",
@@ -83,6 +72,7 @@ const CourseSchema = new mongoose.Schema(
     category: {
       type: String,
       default: "Technology",
+      lowercase: true,
       required: true,
     },
     courseDuration: {type: String},

@@ -33,7 +33,7 @@ class CourseController {
         order = "desc",
         search,
         fields,
-        topic,
+        category,
         rating,
         ...filters
       } = req.query;
@@ -48,12 +48,13 @@ class CourseController {
         ];
       }
 
-      if (topic) {
-        query.category = topic;
+      if (category) {
+        const topicStr = String(category).trim().toLowerCase();
+        const tokens = topicStr.split(/\s+/).filter(Boolean);
+        const esc = tokens.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+
+        query.category = {$regex: esc.join("|"), $options: "i"};
       }
-      //  if (rating) {
-      //    query.rating = Number(rating);
-      //  }
 
       if (filters.hasOwnProperty("isPublished")) {
         delete filters.isPublished;

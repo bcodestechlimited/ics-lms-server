@@ -860,7 +860,7 @@ class CourseService {
               platformName: "L&D LMS",
               firstName: user.firstname,
               durationDays: payload.durationDays,
-              companyName: "ICS ACADEMY",
+              companyName: APP_CONFIG.COMPANY_NAME,
               loginUrl: existingUser
                 ? `${APP_CONFIG.CLIENT_FRONTEND_BASE_URL}/dashboard`
                 : `${

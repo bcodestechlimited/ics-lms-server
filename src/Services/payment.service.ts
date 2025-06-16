@@ -115,7 +115,7 @@ class PaymentService {
           variables: {
             userName: payload.firstName,
             courseName: course.title,
-            instructorName: "ICS ACADEMY",
+            instructorName: APP_CONFIG.COMPANY_NAME,
             dashboardUrl: APP_CONFIG.CLIENT_FRONTEND_BASE_URL + "/dashboard",
             helpCenterEmail: APP_CONFIG.SUPPORT_EMAIL,
           },

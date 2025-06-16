@@ -1,7 +1,11 @@
 {
-  "name": "ics-lms",
+  "name": "logira-lms",
   "version": "1.1.0",
   "description": "A backend for ICS LMS",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bcodestechlimited/ics-lms-server.git"
+  },
   "main": "src/index.ts",
   "author": "David Bodunrin",
   "license": "MIT",
@@ -11,6 +15,7 @@
     "dev": "nodemon src/index.ts"
   },
   "keywords": [
+    "Logira",
     "ICS",
     "LMS",
     "learning manament system",
