@@ -56,7 +56,7 @@ class EmailService {
       const html = this.renderTemplate(emailData.template, emailData.variables);
 
       const emailContent: SendMailOptions = {
-        from: APP_CONFIG.SMTP_FROM_ADDRESS,
+        from: `<${APP_CONFIG.SMTP_FROM_ADDRESS}>`,
         to: emailData.to,
         subject: emailData.subject,
         html,

@@ -33,8 +33,7 @@ const purifyConfig = {
 };
 
 const APP_CONFIG = Object.freeze({
-  SMTP_FROM_ADDRESS:
-    process.env.SMTP_FROM_ADDRESS || "<no-reply@icsacademy.com>",
+  SMTP_FROM_ADDRESS: process.env.SMTP_FROM_ADDRESS || "<support@logiralms.com>",
   SMTP_HOST: process.env.SMTP_HOST || "smtp.example.com",
   SMTP_PORT: process.env.SMTP_PORT || 587,
   SMTP_SECURE: process.env.SMTP_SECURE === "true",
