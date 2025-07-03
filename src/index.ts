@@ -46,6 +46,8 @@ app.use(
       "http://localhost:5173",
       "https://ics-lms-web.vercel.app",
       "https://ics-lms-admin-six.vercel.app",
+      "https://www.logiralms.com",
+      "https://www.admin.logiralms.com"
     ],
     credentials: true,
   })
