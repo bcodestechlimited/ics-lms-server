@@ -27,6 +27,7 @@ import {ServiceResponse} from "../utils/service-response";
 import {certificateService} from "./certificate.service";
 import {fileParserService} from "./file-parser.service";
 import {emailService} from "./mail.service";
+import Coupon from "../models/coupon.model";
 
 class CourseService {
   public async fetchAllPublishedCourse({options, query}: CourseQueryOptions) {
@@ -166,7 +167,9 @@ class CourseService {
       };
     }
     course.isPublished = course.isPublished ? false : true;
+
     await course.save();
+
     return {
       success: true,
       message: "Course published successfully",
@@ -636,7 +639,6 @@ class CourseService {
         );
       }
 
-
       const progress = await Progress.create({
         user: userId,
         course: courseId,
@@ -1015,13 +1017,36 @@ class CourseService {
     return user?.expiredCourses || [];
   }
 
+  public async softDelete(courseId: string) {
+    const course = await Course.findById({id: courseId});
+    if (!course) {
+      throw new Error("Course not found");
+    }
+
+    const coupons = await Coupon.find({courseId});
+
+    for (const coupon of coupons) {
+      coupon.isDeleted = true;
+      await coupon.save();
+    }
+
+    course.isDeleted = true;
+    await course.save();
+
+    return ServiceResponse.success(
+      "Course deleted successfully",
+      {},
+      StatusCodes.OK
+    );
+  }
+
   public async deleteCourseByCourseId(courseId: string) {
     const course = await Course.findByIdAndDelete(courseId);
 
     return ServiceResponse.success(
       "Course deleted successfully",
       course,
-      StatusCodes.NO_CONTENT
+      StatusCodes.OK
     );
   }
 }

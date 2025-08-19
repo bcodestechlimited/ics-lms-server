@@ -48,7 +48,7 @@ class CouponService {
 
   private generateCouponCode(): string {
     const raw = uuidv4().replace(/-/g, "");
-    // take only what you need
+
     return raw.slice(0, this.COUPON_LENGTH).toUpperCase();
   }
 
@@ -95,13 +95,11 @@ class CouponService {
   public validateCouponFormat(code: string): boolean {
     if (!code) return false;
 
-    // Handle codes with prefix
     const parts = code.split("-");
     const codeToValidate = parts.length > 1 ? parts[1] : code;
 
     if (codeToValidate.length !== this.COUPON_LENGTH + 1) return false;
 
-    // Validate characters
     if (
       !codeToValidate
         .split("")
@@ -110,7 +108,6 @@ class CouponService {
       return false;
     }
 
-    // Validate checksum
     const codeWithoutChecksum = codeToValidate.slice(0, -1);
     const expectedCode = this.addChecksum(codeWithoutChecksum);
     return expectedCode === codeToValidate;
@@ -506,6 +503,58 @@ class CouponService {
       success: true,
       message: "User enrolled with perpetual access",
     };
+  }
+
+  public async deleteCoupon(id: string) {
+    try {
+      const response = await Coupon.findByIdAndDelete(id);
+      if (!response) {
+        return ServiceResponse.failure(
+          "Coupon not found",
+          null,
+          StatusCodes.NOT_FOUND
+        );
+      }
+      return ServiceResponse.success(
+        "Coupon deleted successfully",
+        null,
+        StatusCodes.OK
+      );
+    } catch (error) {
+      return ServiceResponse.failure(
+        "Internal Server Error",
+        null,
+        StatusCodes.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  public async softDeleteCoupon(id: string) {
+    try {
+      const response = await Coupon.findByIdAndUpdate(
+        id,
+        { isDeleted: true },
+        { new: true }
+      );
+      if (!response) {
+        return ServiceResponse.failure(
+          "Coupon not found",
+          null,
+          StatusCodes.NOT_FOUND
+        );
+      }
+      return ServiceResponse.success(
+        "Coupon soft deleted successfully",
+        null,
+        StatusCodes.OK
+      );
+    } catch (error) {
+      return ServiceResponse.failure(
+        "Internal Server Error",
+        null,
+        StatusCodes.INTERNAL_SERVER_ERROR
+      );
+    }
   }
 }
 

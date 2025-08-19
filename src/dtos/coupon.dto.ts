@@ -20,8 +20,8 @@ class CouponDTO {
     this.currentUses = coupon.currentUses;
     this.createdAt = coupon.createdAt;
     this.courseId = {
-      id: coupon.courseId._id,
-      title: coupon.courseId.title,
+      id: coupon.courseId?._id,
+      title: coupon.courseId?.title,
     };
   }
 }

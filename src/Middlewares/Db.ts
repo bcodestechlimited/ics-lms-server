@@ -9,7 +9,7 @@ const connectDB = async () => {
     let uri: string = process.env.MONGO_URI || "";
     // let uri: string = process.env.LOCAL_MONGO_URI || "";
     await mongoose.connect(uri, {
-      dbName: process.env.NODE_ENV === "development" ? "lms" : "ics-lms",
+      dbName: process.env.NODE_ENV === "development" ? "ics-lms" : "ics-lms",
     });
     console.log("[DATABASE 📢]: DB connected to MONGODB 🚀🚀".bgBlack.blue);
   } catch (err) {

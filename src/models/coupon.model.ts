@@ -22,6 +22,7 @@ export interface ICoupon extends Document {
   courseId: mongoose.Types.ObjectId;
   currentUses: number;
   users: [mongoose.Types.ObjectId];
+  isDeleted: boolean;
 }
 
 const CouponSchema = new Schema<ICoupon>(
@@ -67,6 +68,7 @@ const CouponSchema = new Schema<ICoupon>(
       index: true,
       autopopulate: true,
     },
+    isDeleted: {type: Boolean, default: false},
   },
   {
     timestamps: true,

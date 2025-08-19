@@ -156,6 +156,15 @@ router
   .route("/course-assessments/:id/submit")
   .post(apiLimiter, isAuthenticated, courseController.submitCourseAssessment);
 
+
+router.delete(
+  "/:id/hard-delete",
+  apiLimiter,
+  isLocalAuthenticated,
+  checkUserRole(["admin", "superadmin"]),
+  courseController.deleteCourse
+);
+
 router
   .route("/:id")
   .put(
@@ -169,7 +178,7 @@ router
     apiLimiter,
     isLocalAuthenticated,
     checkUserRole(["admin", "superadmin"]),
-    courseController.deleteCourse
+    courseController.softDeleteCourse
   );
 
 export default router;

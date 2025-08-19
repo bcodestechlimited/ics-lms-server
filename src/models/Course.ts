@@ -122,6 +122,7 @@ const CourseSchema = new mongoose.Schema(
     status: {type: String, default: "active"},
     quiz: {type: ObjectId, ref: "Quiz"},
     isPublished: {type: Boolean, default: false},
+    isDeleted: {type: Boolean, default: false},
     organisation: {
       type: ObjectId,
       ref: "User",

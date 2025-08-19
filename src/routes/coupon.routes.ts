@@ -86,12 +86,27 @@ router
   );
 
 router
+  .route("/:id/hard-delete")
+  .delete(
+    apiLimiter,
+    isLocalAuthenticated,
+    checkUserRole(["admin", "superadmin"]),
+    couponController.deleteCoupon
+  );
+
+router
   .route("/:id")
   .get(
     apiLimiter,
     isLocalAuthenticated,
     checkUserRole(["admin", "superadmin"]),
     couponController.getACouponById
+  )
+  .delete(
+    apiLimiter,
+    isLocalAuthenticated,
+    checkUserRole(["admin", "superadmin"]),
+    couponController.softDeleteCoupon
   );
 
 export default router;

@@ -21,14 +21,16 @@ class AuthService {
           "password firstName lastName email _id role privilege isEmailVerified isActive passwordVersion"
         )
         .lean();
-      if (!user) {
-        return ServiceResponse.failure(
-          "User not found",
-          null,
-          StatusCodes.NOT_FOUND
-        );
-      }
-      const isPasswordValid = await bcrypt.compare(password, user.password);
+        
+        if (!user) {
+          return ServiceResponse.failure(
+            "User not found",
+            null,
+            StatusCodes.NOT_FOUND
+          );
+        }
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+      
       if (!isPasswordValid) {
         return ServiceResponse.failure(
           "Password or email is not correct",

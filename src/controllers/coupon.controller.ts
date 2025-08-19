@@ -63,6 +63,7 @@ class CouponController {
         search: req.query.search as string,
         filters: {
           discountType: req.query.discountType as string,
+          isDeleted: false,
           status: req.query.status as string,
           courseId: req.query.courseId as string,
           expirationDate: {
@@ -321,6 +322,71 @@ class CouponController {
 
       handleServiceResponse(
         ServiceResponse.success("Success", couponDTO, StatusCodes.OK),
+        res
+      );
+    } catch (error) {
+      handleServiceResponse(
+        ServiceResponse.failure(
+          "Internal Server Error",
+          null,
+          StatusCodes.INTERNAL_SERVER_ERROR
+        ),
+        res
+      );
+    }
+  }
+
+  async deleteCoupon(req: Request, res: Response, next: NextFunction) {
+    try {
+      const couponId = req.params.id;
+
+      const response = await couponService.deleteCoupon(couponId);
+
+      if (!response.success) {
+        return handleServiceResponse(
+          ServiceResponse.failure(
+            "Request Failed",
+            null,
+            StatusCodes.BAD_REQUEST
+          ),
+          res
+        );
+      }
+
+      handleServiceResponse(
+        ServiceResponse.success("Success", null, StatusCodes.OK),
+        res
+      );
+    } catch (error) {
+      handleServiceResponse(
+        ServiceResponse.failure(
+          "Internal Server Error",
+          null,
+          StatusCodes.INTERNAL_SERVER_ERROR
+        ),
+        res
+      );
+    }
+  }
+
+  async softDeleteCoupon(req: Request, res: Response){
+    try {
+      const couponId = req.params.id;
+      const response = await couponService.softDeleteCoupon(couponId);
+
+      if (!response.success) {
+        return handleServiceResponse(
+          ServiceResponse.failure(
+            "Request Failed",
+            null,
+            StatusCodes.BAD_REQUEST
+          ),
+          res
+        );
+      }
+
+      handleServiceResponse(
+        ServiceResponse.success("Success", null, StatusCodes.OK),
         res
       );
     } catch (error) {

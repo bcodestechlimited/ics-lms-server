@@ -14,6 +14,7 @@ export interface SortOptions {
 export interface CouponFilterOptions {
   discountType?: string;
   status?: string;
+  isDeleted?: boolean;
   courseId?: string;
   expirationDate?: {
     start?: Date;

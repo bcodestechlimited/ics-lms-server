@@ -39,6 +39,7 @@ class CourseController {
       } = req.query;
       const query: Record<string, any> = {
         isPublished: true,
+        isDeleted: {$nin: [true]},
       };
 
       if (search) {
@@ -78,6 +79,8 @@ class CourseController {
         query,
       });
 
+     
+
       handleServiceResponse(
         ServiceResponse.success("Success", response, StatusCodes.OK),
         res
@@ -110,6 +113,7 @@ class CourseController {
 
       const query: Record<string, any> = {
         isPublished: true,
+        isDeleted: {$nin: [true]}
       };
       if (search) {
         query.$or = [
@@ -734,8 +738,11 @@ class CourseController {
   async getCourseAssesments(req: ExtendedRequest, res: Response) {
     try {
       const courseId = req.params.id;
-      const userRole = req.user?.role as string
-      const response = await courseService.fetchCourseAssesments(courseId, userRole);
+      const userRole = req.user?.role as string;
+      const response = await courseService.fetchCourseAssesments(
+        courseId,
+        userRole
+      );
       if (!response.success) {
         return handleServiceResponse(
           ServiceResponse.failure(
@@ -900,6 +907,14 @@ class CourseController {
     const serviceResponse = await courseService.deleteCourseByCourseId(
       courseId
     );
+
+    res.status(serviceResponse.statusCode).json(serviceResponse);
+  }
+
+  public async softDeleteCourse(req: Request, res: Response) {
+    const courseId = req.params.id;
+
+    const serviceResponse = await courseService.softDelete(courseId);
 
     res.status(serviceResponse.statusCode).json(serviceResponse);
   }
