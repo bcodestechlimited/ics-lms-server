@@ -1,9 +1,9 @@
 import "colors";
-import compression from "compression";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import dotenv from "dotenv";
 import express, { Application, Request, Response } from "express";
+import fileUpload from "express-fileupload";
 import { create } from "express-handlebars";
 import helmet from "helmet";
 import { createServer } from "http";
@@ -11,27 +11,25 @@ import morgan from "morgan";
 import morganBody from "morgan-body";
 import NodeCache from "node-cache";
 import path from "path";
-import connectDB, { seedAdmin } from "./Middlewares/Db.ts";
+import pino from "pino";
+import pinoHttp from "pino-http";
+import { APP_CONFIG } from "./config/app.config.ts";
+import connectDB from "./Middlewares/Db.ts";
 import errorHandler from "./Middlewares/error-handler.ts";
+import AdminRouter from "./routes/admin.routes.ts";
+import analyticsRouter from "./routes/analytics.routes.ts";
 import UserRoute from "./routes/auth.routes.ts";
 import BCTCourseRoute from "./routes/bct-course.routes.ts";
 import CertificateRouter from "./routes/certificate.routes.ts";
 import CouponRoute from "./routes/coupon.routes.ts";
 import CourseModuleRouter from "./routes/course-module.routes.ts";
 import CourseRoute from "./routes/course.routes.ts";
-import Planroute from "./routes/plan.routes.ts";
 import PaymentRoute from "./routes/payment.routes.ts";
-import templateRouter from "./routes/template.routes.ts";
-import AdminRouter from "./routes/admin.routes.ts";
-import { startAgenda } from "./Services/scheduler.service.ts";
-import fileUpload from "express-fileupload";
-import analyticsRouter from "./routes/analytics.routes.ts";
+import Planroute from "./routes/plan.routes.ts";
 import progressRouter from "./routes/progress.routes.ts";
+import templateRouter from "./routes/template.routes.ts";
+import { startAgenda } from "./Services/scheduler.service.ts";
 import "./utils/tracing.ts";
-import pino from "pino";
-import pinoHttp from "pino-http";
-import { trace, SpanStatusCode } from "@opentelemetry/api";
-import { APP_CONFIG } from "./config/app.config.ts";
 
 export const nodeClient = new NodeCache({ stdTTL: 100, checkperiod: 120 });
 
@@ -45,7 +43,7 @@ const logger = pino({
 app.use(pinoHttp({ logger }));
 
 app.set("trust proxy", 1);
-app.use(compression());
+// app.use(compression());
 app.use(
   cors({
     origin: [
@@ -62,6 +60,17 @@ app.use(
       "https://logiralms.com",
     ],
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-Requested-With",
+      "Accept",
+      "Origin",
+    ],
+    exposedHeaders: ["Set-Cookie"],
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
   }),
 );
 app.use(express.urlencoded({ extended: true, limit: "15mb" }));
@@ -85,7 +94,7 @@ morganBody(app, {
   logReqUserAgent: false,
 });
 app.use(morgan("dev"));
-app.use(helmet());
+app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 
 app.use(express.static(path.join(__dirname, "Public")));
 
