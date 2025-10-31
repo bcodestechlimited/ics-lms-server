@@ -3,15 +3,15 @@ import compression from "compression";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import dotenv from "dotenv";
-import express, {Application, Request, Response} from "express";
-import {create} from "express-handlebars";
+import express, { Application, Request, Response } from "express";
+import { create } from "express-handlebars";
 import helmet from "helmet";
-import {createServer} from "http";
+import { createServer } from "http";
 import morgan from "morgan";
 import morganBody from "morgan-body";
 import NodeCache from "node-cache";
 import path from "path";
-import connectDB, {seedAdmin} from "./Middlewares/Db.ts";
+import connectDB, { seedAdmin } from "./Middlewares/Db.ts";
 import errorHandler from "./Middlewares/error-handler.ts";
 import UserRoute from "./routes/auth.routes.ts";
 import BCTCourseRoute from "./routes/bct-course.routes.ts";
@@ -23,16 +23,26 @@ import Planroute from "./routes/plan.routes.ts";
 import PaymentRoute from "./routes/payment.routes.ts";
 import templateRouter from "./routes/template.routes.ts";
 import AdminRouter from "./routes/admin.routes.ts";
-import {startAgenda} from "./Services/scheduler.service.ts";
+import { startAgenda } from "./Services/scheduler.service.ts";
 import fileUpload from "express-fileupload";
 import analyticsRouter from "./routes/analytics.routes.ts";
 import progressRouter from "./routes/progress.routes.ts";
+import "./utils/tracing.ts";
+import pino from "pino";
+import pinoHttp from "pino-http";
+import { trace, SpanStatusCode } from "@opentelemetry/api";
+import { APP_CONFIG } from "./config/app.config.ts";
 
-export const nodeClient = new NodeCache({stdTTL: 100, checkperiod: 120});
+export const nodeClient = new NodeCache({ stdTTL: 100, checkperiod: 120 });
 
 dotenv.config();
 
 const app: Application = express();
+app.use(express.json({ limit: "15mb" }));
+const logger = pino({
+  level: process.env.NODE_ENV === "production" ? "info" : "debug",
+});
+app.use(pinoHttp({ logger }));
 
 app.set("trust proxy", 1);
 app.use(compression());
@@ -46,22 +56,23 @@ app.use(
       "http://localhost:5173",
       "https://ics-lms-web.vercel.app",
       "https://ics-lms-admin-six.vercel.app",
-      "https://www.logiralms.com",
-      "https://www.admin.logiralms.com"
+      // "https://www.logiralms.com",
+      // "https://www.admin.logiralms.com",
+      "https://admin.logiralms.com",
+      "https://logiralms.com",
     ],
     credentials: true,
-  })
+  }),
 );
-app.use(express.json({limit: "15mb"}));
-app.use(express.urlencoded({extended: true, limit: "15mb"}));
+app.use(express.urlencoded({ extended: true, limit: "15mb" }));
 app.use(cookieParser());
 app.use(
   fileUpload({
     createParentPath: true,
-    limits: {fileSize: 5 * 1024 * 1024},
+    limits: { fileSize: 5 * 1024 * 1024 },
     useTempFiles: true,
     tempFileDir: "/tmp/",
-  })
+  }),
 );
 
 morganBody(app, {
@@ -70,7 +81,7 @@ morganBody(app, {
   logAllReqHeader: false,
   timezone: "Africa/Lagos",
   prettify: true,
-  logRequestBody: true,
+  logRequestBody: APP_CONFIG.NODE_ENV === "development" ? true : false,
   logReqUserAgent: false,
 });
 app.use(morgan("dev"));
@@ -122,7 +133,7 @@ app.use(BCT_BASE_URL + "/bct-course", BCTCourseRoute);
 // Page not found
 app.use((req: Request, res: Response) => {
   res.status(400).json({
-    error: [{message: `Route not found`, path: "server"}],
+    error: [{ message: `Route not found`, path: "server" }],
   });
 });
 
@@ -141,4 +152,3 @@ connectDB().then(() => {
     // });
   });
 });
-

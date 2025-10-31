@@ -79,8 +79,6 @@ class CourseController {
         query,
       });
 
-     
-
       handleServiceResponse(
         ServiceResponse.success("Success", response, StatusCodes.OK),
         res
@@ -465,15 +463,50 @@ class CourseController {
   async updateCoursePricing(req: Request, res: Response) {
     try {
       const id = req.body.course_price_id;
-      const payload = {coursePricing: req.body.coursePrice};
+      const coursePrice = req.body.coursePrice;
+      const courseId = req.body.courseId as string | undefined;
 
-      const pricing = await CoursePricing.findByIdAndUpdate(id, payload, {
-        new: true,
-      });
+      let pricing;
+
+      if (id) {
+        pricing = await CoursePricing.findByIdAndUpdate(
+          id,
+          {
+            coursePricing: coursePrice,
+          },
+          {new: true}
+        );
+      }
 
       if (!pricing) {
-        return res.status(404).json({message: "No course pricing found"});
+        if (!courseId) {
+          return res
+            .status(StatusCodes.BAD_REQUEST)
+            .json({message: "courseId is required when creating pricing"});
+        }
+
+        const course = await Course.findById(courseId);
+        if (!course) {
+          return res
+            .status(StatusCodes.NOT_FOUND)
+            .json({message: "No course found"});
+        }
+
+        pricing = await CoursePricing.create({
+          courseId,
+          coursePricing: coursePrice,
+          ...(req.body.courseCoupon
+            ? {courseCoupon: req.body.courseCoupon}
+            : {}),
+        });
       }
+
+      const pricingCourseId = pricing.courseId;
+      await Course.findByIdAndUpdate(
+        pricingCourseId,
+        {$set: {course_price: pricing._id}},
+        {new: true}
+      );
 
       handleServiceResponse(
         ServiceResponse.success("Success", pricing, 200),
