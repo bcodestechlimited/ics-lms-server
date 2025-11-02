@@ -1,9 +1,7 @@
+import bcrypt from "bcryptjs";
 import dayjs from "dayjs";
-import {UploadedFile} from "express-fileupload";
-import fs from "fs";
 import {StatusCodes} from "http-status-codes";
 import mongoose from "mongoose";
-import path from "path";
 import {APP_CONFIG} from "../config/app.config";
 import {AdminQueryOptions} from "../interfaces/admin.interface";
 import CertificateTemplateModel from "../models/certificate-template.model";
@@ -14,7 +12,6 @@ import UserCourseExtensionRequest, {
 } from "../models/user-request.model";
 import {ServiceResponse} from "../utils/service-response";
 import {emailService} from "./mail.service";
-import bcrypt from "bcryptjs";
 
 class AdminService {
   // test : this service

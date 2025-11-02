@@ -197,7 +197,15 @@ class AuthService {
         );
       }
 
-      const token = user.generatePasswordResetToken();
+     
+      const resetToken = crypto.randomBytes(32).toString("hex");
+      const hashedToken = crypto
+        .createHash("sha256")
+        .update(resetToken)
+        .digest("hex");
+      user.passwordResetToken = hashedToken;
+      user.passwordResetTokenExpires = new Date(Date.now() + 60 * 60 * 1000);
+      const token = resetToken;
 
       await user.save();
       const emailPayload = {

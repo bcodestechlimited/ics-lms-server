@@ -1,11 +1,46 @@
-import Plan from "../models/plan.model";
+import Plan, {IPlan} from "../models/plan.model";
 import {CreatePlanInterface} from "../Schema/plan.schema";
+import {DefaultSortBy, IQueryParams} from "../shared/query.interface";
+import {coerceNumber} from "../utils/course-helpers";
+import {paginate} from "../utils/paginate";
+import {ApiSuccess} from "../utils/response-handler";
 
 class PlanService {
-  //todo: handle pagination
-  async fetchAllPlans() {
-    const plans = await Plan.find();
-    return {success: true, data: plans};
+  async fetchAllPlans(query: IQueryParams) {
+    const page = coerceNumber(query.page, 1);
+    const limit = coerceNumber(query.limit, 20);
+    const search = (query.search ?? "").trim();
+    const sortBy = (query.sortBy ?? "createdAt") as DefaultSortBy;
+    const sortOrder = query.sortOrder === "asc" ? 1 : -1;
+    const sort: Record<string, 1 | -1> = {};
+
+    const filterQuery: Record<string, any> = {};
+    if (search) {
+      filterQuery.$or = [
+        {name: {$regex: search, $options: "i"}},
+        {description: {$regex: search, $options: "i"}},
+        {planType: {$regex: search, $options: "i"}},
+        {features: {$regex: search, $options: "i"}},
+      ];
+    }
+
+    switch (sortBy) {
+      case "createdAt":
+        sort.createdAt = sortOrder;
+        break;
+      default:
+        sort.createdAt = -1;
+        break;
+    }
+
+    const {documents: plans, pagination} = await paginate<IPlan>({
+      model: Plan,
+      query: filterQuery,
+      page,
+      limit,
+      sort,
+    });
+    return ApiSuccess.ok("Plans retrieved", {plans, pagination});
   }
 
   public async createPlan({

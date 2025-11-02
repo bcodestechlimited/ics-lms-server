@@ -1,43 +1,22 @@
-import { Request, Response } from "express";
-
-import { handleServiceResponse } from "../Middlewares/validation.middleware";
-import { ServiceResponse } from "../utils/service-response";
-import { StatusCodes } from "http-status-codes";
+import {Request, Response} from "express";
+import {handleServiceResponse} from "../Middlewares/validation.middleware";
+import {ServiceResponse} from "../utils/service-response";
+import {StatusCodes} from "http-status-codes";
 import PlanService from "../Services/plan.service";
+import {IQueryParams} from "../shared/query.interface";
 
 const planService = new PlanService();
 
 class PlanController {
   async getPlans(req: Request, res: Response) {
-    try {
-      const response = await planService.fetchAllPlans();
-      if (!response.success) {
-        return handleServiceResponse(
-          ServiceResponse.failure("Bad Request", null, StatusCodes.BAD_REQUEST),
-          res
-        );
-      }
-
-      handleServiceResponse(
-        ServiceResponse.success("Success", response, StatusCodes.OK),
-        res
-      );
-    } catch (error) {
-      handleServiceResponse(
-        ServiceResponse.failure(
-          "Internal Server Error",
-          null,
-          StatusCodes.INTERNAL_SERVER_ERROR
-        ),
-        res
-      );
-    }
+    const query = req.query as IQueryParams;
+    const result = await planService.fetchAllPlans(query);
+    res.status(result.status_code).json(result);
   }
 
   async createPlan(req: Request, res: Response) {
     try {
-      const { name, description, planType, price, duration, features } =
-        req.body;
+      const {name, description, planType, price, duration, features} = req.body;
       const response = await planService.createPlan({
         name,
         description,
@@ -56,7 +35,7 @@ class PlanController {
       handleServiceResponse(
         ServiceResponse.success(
           "Success",
-          { data: response.data },
+          {data: response.data},
           StatusCodes.CREATED
         ),
         res
@@ -75,8 +54,7 @@ class PlanController {
 
   async editPlan(req: Request, res: Response) {
     try {
-      const { name, description, planType, price, duration, features } =
-        req.body;
+      const {name, description, planType, price, duration, features} = req.body;
       const response = await planService.updatePlan(req.params.id, {
         name,
         description,
@@ -95,7 +73,7 @@ class PlanController {
       handleServiceResponse(
         ServiceResponse.success(
           "Success",
-          { data: response.data },
+          {data: response.data},
           StatusCodes.OK
         ),
         res
@@ -112,23 +90,33 @@ class PlanController {
     }
   }
 
-  async deletePlan(req: Request, res: Response){
+  async deletePlan(req: Request, res: Response) {
     try {
-      const response = await planService.deletePlanById(req.params.id)
-      if(!response?.success) {
-        return handleServiceResponse(ServiceResponse.failure("Bad Request", null, StatusCodes.BAD_REQUEST), res)
+      const response = await planService.deletePlanById(req.params.id);
+      if (!response?.success) {
+        return handleServiceResponse(
+          ServiceResponse.failure("Bad Request", null, StatusCodes.BAD_REQUEST),
+          res
+        );
       }
 
-      handleServiceResponse(ServiceResponse.success("Success", {data: response.data}, StatusCodes.OK), res)
+      handleServiceResponse(
+        ServiceResponse.success(
+          "Success",
+          {data: response.data},
+          StatusCodes.OK
+        ),
+        res
+      );
     } catch (error) {
-       handleServiceResponse(
-         ServiceResponse.failure(
-           "Internal Server Error",
-           null,
-           StatusCodes.INTERNAL_SERVER_ERROR
-         ),
-         res
-       );
+      handleServiceResponse(
+        ServiceResponse.failure(
+          "Internal Server Error",
+          null,
+          StatusCodes.INTERNAL_SERVER_ERROR
+        ),
+        res
+      );
     }
   }
 }

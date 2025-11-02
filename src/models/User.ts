@@ -42,7 +42,7 @@ export interface ICourseEnrollment {
   isAssigned: boolean
 }
 
-export interface IUserBase {
+export interface IUserBase extends Document {
   slug: string;
   firstName: string;
   lastName: string;
@@ -100,18 +100,18 @@ export interface IUserMethods {
   checkAndExpireCourses(): Promise<Types.ObjectId[]>;
 }
 
-export interface IUser extends IUserBase, IUserMethods, Document {}
+// export interface IUser extends IUserBase, IUserMethods, Document {}
 
-export interface IUserModel extends Model<IUser> {
+export interface IUserModel extends Model<IUserBase> {
   findByEmailInvitationToken(
     email: string,
     token: string
-  ): Promise<IUser | null>;
+  ): Promise<IUserBase | null>;
   verifyToken(plainToken: string, hashedToken: string): boolean;
   checkAllUsersForExpiredCourses(): Promise<void>;
 }
 
-const UserSchema = new mongoose.Schema(
+const UserSchema = new mongoose.Schema<IUserBase>(
   {
     slug: {
       type: String,
@@ -326,7 +326,6 @@ UserSchema.methods.generateEmailInvitationToken = function () {
   this.emailInvitationStatus = EmailInvitationEnum.PENDING;
   this.staffEmailInvitationSentAt = new Date();
 
-
   return token;
 };
 
@@ -411,4 +410,4 @@ UserSchema.virtual("courses").get(function () {
 
 export type UserDocument = InferSchemaType<typeof UserSchema>;
 
-export default mongoose.model<IUser, IUserModel>("User", UserSchema);
+export default mongoose.model<IUserBase, IUserModel>("User", UserSchema);

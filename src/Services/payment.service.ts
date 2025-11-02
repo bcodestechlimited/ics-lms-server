@@ -34,7 +34,7 @@ class PaymentService {
         course.course_price &&
         typeof course.course_price === "object"
       ) {
-        originalPrice = (course.course_price as ICoursePricing)
+        originalPrice = (course.course_price as unknown as ICoursePricing)
           .coursePricing as number;
       } else {
         return ServiceResponse.failure(

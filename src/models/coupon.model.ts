@@ -66,7 +66,7 @@ const CouponSchema = new Schema<ICoupon>(
       type: Schema.Types.ObjectId,
       ref: "Course",
       index: true,
-      autopopulate: true,
+      autopopulate: false,
     },
     isDeleted: {type: Boolean, default: false},
   },

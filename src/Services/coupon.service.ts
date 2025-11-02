@@ -4,10 +4,16 @@ import {v4 as uuidv4} from "uuid";
 import {UserType} from "../interfaces/auth.interface";
 import {
   CouponCheckoutInterface,
+  CouponQueryParams,
   ProcessCouponInterface,
+  SORTABLE,
 } from "../interfaces/coupon.interface";
 import {QueryOptions, QueryResponse} from "../interfaces/query";
-import Coupon, {CouponStatusEnum, ICoupon} from "../models/coupon.model";
+import Coupon, {
+  CouponStatusEnum,
+  DiscountType,
+  ICoupon,
+} from "../models/coupon.model";
 import Course from "../models/Course";
 import {ICoursePricing} from "../models/course-pricing.model";
 import {
@@ -17,6 +23,11 @@ import {
 import {QueryBuilder} from "../utils/query-builder";
 import {ServiceResponse} from "../utils/service-response";
 import User from "../models/User";
+import {CourseQueryParams, IQueryParams} from "../shared/query.interface";
+import {ApiSuccess} from "../utils/response-handler";
+import {coerceNumber} from "../utils/course-helpers";
+import {toDate} from "../utils/parse.helpers";
+import {paginate} from "../utils/paginate";
 
 interface ExtendedCreateCouponInterface extends CreateCouponInterface {
   courseId: string;
@@ -113,11 +124,72 @@ class CouponService {
     return expectedCode === codeToValidate;
   }
 
-  async fetchCoupons(
-    queryOptions: QueryOptions
-  ): Promise<QueryResponse<ICoupon>> {
-    const queryBuilder = new QueryBuilder<ICoupon>(Coupon, queryOptions);
-    return await queryBuilder.execute();
+  async fetchCoupons(query: CouponQueryParams) {
+    const page = coerceNumber(query.page, 1);
+    const limit = coerceNumber(query.limit, 20);
+    const search = (query.search ?? "").trim();
+
+    const sortBy = (
+      query.sortBy && SORTABLE.has(query.sortBy) ? query.sortBy : "createdAt"
+    ) as
+      | "createdAt"
+      | "updatedAt"
+      | "couponCode"
+      | "percentage"
+      | "expirationDate";
+
+    const sortOrder = query.sortOrder === "asc" ? 1 : -1;
+    const sort = {[sortBy]: sortOrder};
+
+    const filterQuery: Record<string, any> = {};
+    if (
+      query.discountType &&
+      Object.values(DiscountType).includes(query.discountType)
+    ) {
+      filterQuery.discountType = query.discountType;
+    }
+    if (
+      query.status &&
+      Object.values(CouponStatusEnum).includes(query.status)
+    ) {
+      filterQuery.status = query.status;
+    }
+    if (query.courseId) {
+      filterQuery.courseId = query.courseId;
+    }
+    const start = toDate(query.startDate);
+    const end = toDate(query.endDate);
+    if (start || end) {
+      filterQuery.expirationDate = {};
+      if (start) filterQuery.expirationDate.$gte = start;
+      if (end) filterQuery.expirationDate.$lte = end;
+    }
+
+    const min = coerceNumber(query.minPercentage, 1);
+    const max = coerceNumber(query.maxPercentage, 100);
+    if (min != null || max != null) {
+      filterQuery.percentage = {};
+      if (min != null) filterQuery.percentage.$gte = min;
+      if (max != null) filterQuery.percentage.$lte = max;
+    }
+
+    if (search) {
+      filterQuery.$or = [{couponCode: {$regex: String(search), $options: "i"}}];
+    }
+
+    const {documents: coupons, pagination} = await paginate<ICoupon>({
+      model: Coupon,
+      query: filterQuery,
+      page,
+      limit,
+      sort,
+      populateOptions: [{path: "courseId", select: "title image"}],
+      select: ["-users"],
+    });
+    return ApiSuccess.ok("Coupons fetched successfully ", {
+      coupons,
+      pagination,
+    });
   }
 
   async fetchActiveCoupons(
@@ -285,7 +357,7 @@ class CouponService {
       course.course_price &&
       typeof course.course_price === "object"
     ) {
-      const coursePricing = (course.course_price as ICoursePricing)
+      const coursePricing = (course.course_price as unknown as ICoursePricing)
         .coursePricing;
 
       const discountedPrice = this.calculateDiscountPrice(
@@ -352,7 +424,7 @@ class CouponService {
         course.course_price &&
         typeof course.course_price === "object"
       ) {
-        const coursePricing = (course.course_price as ICoursePricing)
+        const coursePricing = (course.course_price as unknown as ICoursePricing)
           .coursePricing;
 
         const discountedPrice = this.calculateDiscountPrice(
@@ -533,8 +605,8 @@ class CouponService {
     try {
       const response = await Coupon.findByIdAndUpdate(
         id,
-        { isDeleted: true },
-        { new: true }
+        {isDeleted: true},
+        {new: true}
       );
       if (!response) {
         return ServiceResponse.failure(

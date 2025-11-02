@@ -2,13 +2,7 @@ import mongoose, {InferSchemaType, Model, PaginateModel} from "mongoose";
 import autopopulate from "mongoose-autopopulate";
 import paginator from "mongoose-paginate-v2";
 import {ICoursePricing} from "./course-pricing.model";
-
-
-export enum SkillLevel {
-  BEGINNER = "beginner",
-  INTERMEDIATE = "intermediate",
-  ADVANCED = "advanced",
-}
+import {CourseInterface, SkillLevel} from "../interfaces/course.interface";
 
 export const DEFAULT_ENROLLMENT_DURATION = 90;
 
@@ -31,7 +25,7 @@ mongoose.plugin(paginator);
 mongoose.plugin(autopopulate);
 const {ObjectId} = mongoose.Schema;
 
-const CourseSchema = new mongoose.Schema(
+const CourseSchema = new mongoose.Schema<CourseInterface>(
   {
     user: {
       type: ObjectId,
@@ -65,7 +59,7 @@ const CourseSchema = new mongoose.Schema(
     caption: {type: String},
     skillLevel: {
       type: String,
-      default: "beginner",
+      default: SkillLevel.BEGINNER,
       enum: Object.values(SkillLevel),
     },
     duration: {type: String},
@@ -100,7 +94,7 @@ const CourseSchema = new mongoose.Schema(
       {
         type: ObjectId,
         ref: "CourseAssessment",
-        autopopulate: true,
+        autopopulate: false,
         index: true,
       },
     ],
@@ -263,7 +257,4 @@ export type CourseDocument = InferSchemaType<typeof CourseSchema> & {
   course_price: mongoose.Types.ObjectId | ICoursePricing;
 } & ICourseMethods;
 
-export default mongoose.model<
-  CourseDocument,
-  PaginateModel<CourseDocument> & CourseDocument
->("Course", CourseSchema);
+export default mongoose.model<CourseInterface>("Course", CourseSchema);

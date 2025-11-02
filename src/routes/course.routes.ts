@@ -16,11 +16,13 @@ import {
 
 const router = express.Router();
 
-router.get(
-  "/course-published",
-  apiLimiter,
-  courseController.getAllPublishedController
-);
+router.get("/course-published", apiLimiter, courseController.getStudentCourses);
+
+// router.get(
+//   "/course-published",
+//   apiLimiter,
+//   courseController.getAllPublishedController
+// );
 
 router.get(
   "/:id/course-modules",
@@ -155,7 +157,6 @@ router
 router
   .route("/course-assessments/:id/submit")
   .post(apiLimiter, isAuthenticated, courseController.submitCourseAssessment);
-
 
 router.delete(
   "/:id/hard-delete",

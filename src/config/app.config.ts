@@ -33,6 +33,9 @@ const purifyConfig = {
 };
 
 const APP_CONFIG = Object.freeze({
+  CORS_ORIGIN:
+    process.env.CORS_ORIGIN ||
+    "http://localhost:3000,http://localhost:5173,http://localhost:5174",
   SMTP_FROM_ADDRESS: process.env.SMTP_FROM_ADDRESS || "<support@logiralms.com>",
   SMTP_HOST: process.env.SMTP_HOST || "smtp.example.com",
   SMTP_PORT: process.env.SMTP_PORT || 587,

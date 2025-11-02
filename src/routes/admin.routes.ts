@@ -1,18 +1,14 @@
 import {Router} from "express";
 import {adminController} from "../controllers/admin.controller";
+import {authController} from "../controllers/auth.controller";
 import {certificateController} from "../controllers/certificate.controller";
-import {
-  checkUserRole,
-  isAuthenticated,
-  isLocalAuthenticated,
-} from "../Middlewares/Auth";
+import {checkUserRole, isLocalAuthenticated} from "../Middlewares/Auth";
+import {apiLimiter} from "../Middlewares/RateLimiter";
 import validateRequest from "../Middlewares/validation.middleware";
 import {
   AdminAcceptUserRequestForCourseExtensionSchema,
   AdminRejectUserRequestForCourseExtensionSchema,
 } from "../Schema/admin.schema";
-import {authController} from "../controllers/auth.controller";
-import {apiLimiter} from "../Middlewares/RateLimiter";
 
 const router = Router();
 

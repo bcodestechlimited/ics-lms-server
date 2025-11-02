@@ -10,7 +10,7 @@ import SendEmail from "../utils/mail";
 
 const baseTemplateSource = fs.readFileSync(
   path.join(__dirname, "..", "views/", "templates", "base_template.hbs"),
-  "utf-8"
+  "utf-8",
 );
 Handlebars.registerPartial("base_template", baseTemplateSource);
 
@@ -32,7 +32,7 @@ class EmailService {
     const newData = { ...data, ...variables };
     const templateSource = fs.readFileSync(
       path.join(__dirname, "..", "views/", "templates", `${templateName}.hbs`),
-      "utf-8"
+      "utf-8",
     );
     const template = Handlebars.compile(templateSource);
     return template(newData);
@@ -50,13 +50,13 @@ class EmailService {
    * @throws {Error} - Throws an error if the email fails to send.
    */
   async sendEmailTemplate(
-    emailData: EmailDataInterface & { attachments?: any[] }
+    emailData: EmailDataInterface & { attachments?: any[] },
   ) {
     try {
       const html = this.renderTemplate(emailData.template, emailData.variables);
 
       const emailContent: SendMailOptions = {
-        from: `<${APP_CONFIG.SMTP_FROM_ADDRESS}>`,
+        from: `<${APP_CONFIG.SMTP_FROM_ADDRESS}>` || "support@logiralms.com",
         to: emailData.to,
         subject: emailData.subject,
         html,

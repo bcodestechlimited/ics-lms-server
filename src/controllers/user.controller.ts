@@ -6,6 +6,7 @@ import UserDto from "../dtos/user.dto";
 import {ExtendedRequest} from "../interfaces/auth.interface";
 import {isMongooseIdValid} from "../utils/lib";
 import {ServiceResponse} from "../utils/service-response";
+import {IQueryParams} from "../shared/query.interface";
 
 const userService = new UserService();
 class UserController {
@@ -51,27 +52,9 @@ class UserController {
   }
 
   async getAllUsers(req: Request, res: Response) {
-    try {
-      const response = await userService.fetchAllStudents();
-
-      handleServiceResponse(
-        ServiceResponse.success(
-          "Success",
-          {data: response, length: response.length},
-          StatusCodes.OK
-        ),
-        res
-      );
-    } catch (error) {
-      handleServiceResponse(
-        ServiceResponse.failure(
-          "Internal Server Error",
-          null,
-          StatusCodes.INTERNAL_SERVER_ERROR
-        ),
-        res
-      );
-    }
+    const query = req.query as IQueryParams;
+    const result = await userService.fetchAllStudents(query);
+    res.status(result.status_code).json(result);
   }
 
   async getAllUsersIssuedCertificates(req: Request, res: Response) {

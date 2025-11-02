@@ -8,6 +8,8 @@ import {ICoupon} from "../models/coupon.model";
 import Course from "../models/Course";
 import CouponService from "../Services/coupon.service";
 import {ServiceResponse} from "../utils/service-response";
+import {IQueryParams} from "../shared/query.interface";
+import {CouponQueryParams} from "../interfaces/coupon.interface";
 
 const couponService = new CouponService();
 class CouponController {
@@ -54,64 +56,10 @@ class CouponController {
   }
 
   async getCoupons(req: Request, res: Response, next: NextFunction) {
-    try {
-      const queryOptions: QueryOptions = {
-        page: Number(req.query.page),
-        limit: Number(req.query.limit),
-        sortBy: req.query.sortBy as string,
-        sortOrder: req.query.sortOrder as "asc" | "desc",
-        search: req.query.search as string,
-        filters: {
-          discountType: req.query.discountType as string,
-          isDeleted: false,
-          status: req.query.status as string,
-          courseId: req.query.courseId as string,
-          expirationDate: {
-            start: req.query.startDate
-              ? new Date(req.query.startDate as string)
-              : undefined,
-            end: req.query.endDate
-              ? new Date(req.query.endDate as string)
-              : undefined,
-          },
-          percentageRange: {
-            min: req.query.minPercentage
-              ? Number(req.query.minPercentage)
-              : undefined,
-            max: req.query.maxPercentage
-              ? Number(req.query.maxPercentage)
-              : undefined,
-          },
-        },
-      };
-      const response = await couponService.fetchCoupons(queryOptions);
+    const query = req.query as CouponQueryParams;
+    const result = await couponService.fetchCoupons(query);
 
-      // transform the coupon data sent
-      const couponDTO = response.data.map((coupon) => {
-        return new CouponDTO(coupon);
-      });
-
-      handleServiceResponse(
-        ServiceResponse.success(
-          "Success",
-          {
-            data: couponDTO,
-            meta: response.meta,
-          },
-          StatusCodes.OK
-        ),
-        res
-      );
-    } catch (error) {
-      handleServiceResponse(
-        ServiceResponse.failure(
-          "Internal Server Error",
-          null,
-          StatusCodes.INTERNAL_SERVER_ERROR
-        ),
-        res
-      );
-    }
+    res.status(result.status_code).json(result);
   }
 
   async updateCouponStatus(req: Request, res: Response, next: NextFunction) {
@@ -369,7 +317,7 @@ class CouponController {
     }
   }
 
-  async softDeleteCoupon(req: Request, res: Response){
+  async softDeleteCoupon(req: Request, res: Response) {
     try {
       const couponId = req.params.id;
       const response = await couponService.softDeleteCoupon(couponId);

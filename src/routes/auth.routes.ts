@@ -30,7 +30,9 @@ router.get(
   userController.getUserAnalytics
 );
 
-router.route("/students").get(userController.getAllUsers);
+router
+  .route("/students")
+  .get(apiLimiter, isLocalAuthenticated, userController.getAllUsers);
 
 router.post("/activate-account", apiLimiter, authController.activateAccount);
 

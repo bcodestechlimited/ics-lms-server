@@ -1,13 +1,17 @@
 import {StatusCodes} from "http-status-codes";
 import mongoose from "mongoose";
 import {UserCourseExtensionPayloadInterface} from "../interfaces/user.interface";
-import User, {UserRole} from "../models/User";
+import User, {IUserBase, UserRole} from "../models/User";
 import UserCourseExtensionRequest from "../models/user-request.model";
 import {ServiceResponse} from "../utils/service-response";
 import {courseService} from "./course.service";
 import {certificateService} from "./certificate.service";
 import {analyticsService} from "./analytics.service";
 import {uploadToCloudinary} from "../utils/cloudinary.utils";
+import {IQueryParams, SortBy, UserSortBy} from "../shared/query.interface";
+import {coerceNumber} from "../utils/course-helpers";
+import {paginate} from "../utils/paginate";
+import {ApiSuccess} from "../utils/response-handler";
 
 class UserService {
   async getMe(id: string) {
@@ -25,15 +29,44 @@ class UserService {
     };
   }
 
-  // todo: handle pagination
-  public async fetchAllStudents() {
-    const students = await User.find({
-      role: {$nin: [UserRole.ADMIN, UserRole.SUPERADMIN]},
-      isAdmin: false,
-      privilege: {$nin: [UserRole.ADMIN, UserRole.SUPERADMIN]},
+  public async fetchAllStudents(query: IQueryParams) {
+    const page = coerceNumber(query.page, 1);
+    const limit = coerceNumber(query.limit, 20);
+    const search = (query.search ?? "").trim();
+    const sortBy = (query.sortBy ?? "createdAt") as UserSortBy;
+    const sortOrder = query.sortOrder === "asc" ? 1 : -1;
+    const sort: Record<string, 1 | -1> = {};
+
+    const filterQuery: Record<string, any> = {};
+    if (search) {
+      filterQuery.$or = [
+        {firstName: {$regex: search, $options: "i"}},
+        {lastName: {$regex: search, $options: "i"}},
+        {email: {$regex: search, $options: "i"}},
+      ];
+    }
+
+    switch (sortBy) {
+      case "email":
+        sort.email = sortOrder;
+        break;
+      case "createdAt":
+        sort.createdAt = sortOrder;
+        break;
+      default:
+        sort.createdAt = -1;
+        break;
+    }
+
+    const {documents: users, pagination} = await paginate<IUserBase>({
+      model: User,
+      query: filterQuery,
+      page,
+      limit,
+      sort,
     });
 
-    return students;
+    return ApiSuccess.ok("Users retrieved", {users, pagination});
   }
 
   // refactor: remove this code

@@ -11,29 +11,130 @@ import {
 import {
   AssignCourseToUsersInterface,
   BulkAssignCourseInterface,
+  CourseInterface,
   CourseQueryOptions,
 } from "../interfaces/course.interface";
-import Course from "../models/Course";
+import Course, {CourseDocument} from "../models/Course";
 import CourseAssessment from "../models/course-assessment.model";
 import CourseBenchmark from "../models/course-benchmark.model";
 import CoursePricing from "../models/course-pricing.model";
-import Progress, { CourseStatusEnum } from "../models/progress.model";
-import User, { EmailInvitationEnum, UserRole } from "../models/User";
+import Progress, {CourseStatusEnum} from "../models/progress.model";
+import User, {EmailInvitationEnum, UserRole} from "../models/User";
 import {
   generateEmailInvitationToken,
   generateRandomPassword,
 } from "../utils/lib";
-import { ServiceResponse } from "../utils/service-response";
-import { certificateService } from "./certificate.service";
-import { fileParserService } from "./file-parser.service";
-import { emailService } from "./mail.service";
+import {ServiceResponse} from "../utils/service-response";
+import {certificateService} from "./certificate.service";
+import {fileParserService} from "./file-parser.service";
+import {emailService} from "./mail.service";
 import Coupon from "../models/coupon.model";
+import {CourseQueryParams, SortBy} from "../shared/query.interface";
+import {coerceNumber, normalizeCategory} from "../utils/course-helpers";
+import {paginate} from "../utils/paginate";
+import {ApiSuccess} from "../utils/response-handler";
 
 class CourseService {
-  public async fetchAllPublishedCourse({ options, query }: CourseQueryOptions) {
-    const courses = await Course.paginate(query, options);
-    return courses;
+  public async getAllStudentCourses(query: CourseQueryParams) {
+    const page = coerceNumber(query.page, 1);
+    const limit = coerceNumber(query.limit, 20);
+    const search = (query.search ?? "").trim();
+    const category = normalizeCategory(query.category);
+    const skillLevel =
+      query.skillLevel && query.skillLevel !== "all"
+        ? query.skillLevel
+        : undefined;
+    const isPublished =
+      typeof query.isPublished === "boolean" ? query.isPublished : undefined;
+    const organisation = query.organisation
+      ? new mongoose.Types.ObjectId(query.organisation)
+      : undefined;
+    const priceMin = Number.isFinite(query.priceMin)
+      ? Number(query.priceMin)
+      : undefined;
+    const priceMax = Number.isFinite(query.priceMax)
+      ? Number(query.priceMax)
+      : undefined;
+    const sortBy = (query.sortBy ?? "createdAt") as SortBy;
+    const sortOrder = query.sortOrder === "asc" ? 1 : -1;
+
+    const filterQuery: Record<string, any> = {
+      isDeleted: false,
+      status: "active",
+    };
+
+    if (typeof isPublished === "boolean") {
+      filterQuery.isPublished = isPublished;
+    }
+
+    if (organisation) {
+      filterQuery.organisation = organisation;
+    }
+
+    if (category) {
+      filterQuery.category = category;
+    }
+
+    if (skillLevel) {
+      filterQuery.skillLevel = skillLevel;
+    }
+
+    if (search) {
+      filterQuery.$or = [
+        {title: {$regex: search, $options: "i"}},
+        {description: {$regex: search, $options: "i"}},
+        {summary: {$regex: search, $options: "i"}},
+      ];
+    }
+
+    const sort: Record<string, 1 | -1> = {};
+    switch (sortBy) {
+      case "title":
+        sort.title = sortOrder;
+        break;
+      case "amount":
+        sort.amount = sortOrder;
+        break;
+      case "topRated":
+        // Sorting by avg rating without aggregation:
+        // Fallback to number of ratings desc as proxy, then createdAt
+        sort["rating"] = -1; // "rating" is an array; Mongoose sorts by array length when used directly
+        sort.createdAt = -1;
+        break;
+      case "mostRated":
+        sort["rating"] = -1; // array length desc
+        sort.createdAt = -1;
+        break;
+      case "createdAt":
+      default:
+        sort.createdAt = sortOrder;
+        break;
+    }
+
+    const {documents: courses, pagination} = await paginate<CourseInterface>({
+      model: Course,
+      query: filterQuery,
+      page,
+      limit,
+      sort,
+      select: [
+        "-course_modules",
+        "-course_price",
+        "-course_benchmark",
+        "-course_assessment",
+        "-participants",
+        "-progress",
+        "-coupon_codes",
+      ],
+    });
+
+    return ApiSuccess.ok("Courses Retrieved", {courses, pagination});
   }
+
+  // public async fetchAllPublishedCourse({options, query}: CourseQueryOptions) {
+  //   const courses = await Course.paginate(query, options);
+  //   return courses;
+  // }
   /**
    * Creates a new course in the database.
    *
@@ -88,7 +189,7 @@ class CourseService {
             ...q,
             courseId: payload.courseId,
           };
-        }),
+        })
       );
 
       return {
@@ -127,9 +228,7 @@ class CourseService {
   }
 
   public async getCourseModules(id: string) {
-    const course = await Course.findById({ _id: id }).populate(
-      "course_modules",
-    );
+    const course = await Course.findById({_id: id}).populate("course_modules");
 
     if (!course) {
       return {
@@ -161,7 +260,7 @@ class CourseService {
   }
 
   public async publishCourse(courseId: string) {
-    const course = await Course.findById({ _id: courseId });
+    const course = await Course.findById({_id: courseId});
     if (!course) {
       return {
         success: false,
@@ -180,7 +279,7 @@ class CourseService {
 
   public async fetchCourseById(
     courseId: string | mongoose.Types.ObjectId,
-    userRole: string | undefined,
+    userRole: string | undefined
   ) {
     try {
       let course;
@@ -194,14 +293,14 @@ class CourseService {
           .populate("course_modules course_price course_benchmark");
       } else {
         course = await Course.findById(courseId).populate(
-          "course_modules course_price course_benchmark",
+          "course_modules course_price course_benchmark"
         );
       }
       if (!course) {
         return ServiceResponse.failure(
           "No course found",
           null,
-          StatusCodes.NOT_FOUND,
+          StatusCodes.NOT_FOUND
         );
       }
 
@@ -211,54 +310,54 @@ class CourseService {
 
       return ServiceResponse.success(
         "Course found",
-        { data: response },
-        StatusCodes.OK,
+        {data: response},
+        StatusCodes.OK
       );
     } catch (error) {
       return ServiceResponse.failure(
         "Internal Server Error",
         null,
-        StatusCodes.INTERNAL_SERVER_ERROR,
+        StatusCodes.INTERNAL_SERVER_ERROR
       );
     }
   }
 
   public async fetchCoursePriceByCourseId(courseId: string) {
     try {
-      const coursePrice = await CoursePricing.findOne({ courseId });
+      const coursePrice = await CoursePricing.findOne({courseId});
       return ServiceResponse.success(
         "Course price found",
-        { data: coursePrice },
-        StatusCodes.OK,
+        {data: coursePrice},
+        StatusCodes.OK
       );
     } catch (error) {
       return ServiceResponse.failure(
         "Error fetching course price",
         null,
-        StatusCodes.INTERNAL_SERVER_ERROR,
+        StatusCodes.INTERNAL_SERVER_ERROR
       );
     }
   }
 
   public async fetchCourseBenchmarkByCourseId(courseId: string) {
     try {
-      const courseBenchmark = await CourseBenchmark.findOne({ courseId });
+      const courseBenchmark = await CourseBenchmark.findOne({courseId});
       return ServiceResponse.success(
         "Course benchmark found",
-        { data: courseBenchmark },
-        StatusCodes.OK,
+        {data: courseBenchmark},
+        StatusCodes.OK
       );
     } catch (error) {
       return ServiceResponse.failure(
         "Error fetching course benchmark",
         null,
-        StatusCodes.INTERNAL_SERVER_ERROR,
+        StatusCodes.INTERNAL_SERVER_ERROR
       );
     }
   }
 
-  public async fetchAllAdminCourses({ options, query }: CourseQueryOptions) {
-    const course = await Course.paginate(query, options);
+  public async fetchAllAdminCourses({options, query}: CourseQueryOptions) {
+    const course = await Course.find(query, options);
 
     return {
       success: true,
@@ -269,25 +368,21 @@ class CourseService {
 
   public async fetchAllCoursesCreatedOverTime() {
     const data = await Course.aggregate([
-      { $match: { isPublished: true } },
+      {$match: {isPublished: true}},
       {
         $group: {
           _id: {
-            year: { $year: "$createdAt" },
-            month: { $month: "$createdAt" },
+            year: {$year: "$createdAt"},
+            month: {$month: "$createdAt"},
           },
-          count: { $sum: 1 },
+          count: {$sum: 1},
         },
       },
-      { $sort: { "_id.year": 1, "_id.month": 1 } },
+      {$sort: {"_id.year": 1, "_id.month": 1}},
       {
         $project: {
           date: {
-            $concat: [
-              { $toString: "$_id.year" },
-              "-",
-              { $toString: "$_id.month" },
-            ],
+            $concat: [{$toString: "$_id.year"}, "-", {$toString: "$_id.month"}],
           },
           count: 1,
           _id: 0,
@@ -298,31 +393,31 @@ class CourseService {
     return ServiceResponse.success(
       "Successfully fetched courses created over time",
       data,
-      StatusCodes.OK,
+      StatusCodes.OK
     );
   }
 
   public async fetchAllCoursesByCategory() {
     const data = await Course.aggregate([
-      { $group: { _id: "$category", count: { $sum: 1 } } },
+      {$group: {_id: "$category", count: {$sum: 1}}},
     ]);
 
     return ServiceResponse.success(
       "Successfully fetched courses by category",
       data,
-      StatusCodes.OK,
+      StatusCodes.OK
     );
   }
 
   public async fetchSkillLevelDistribution() {
     const data = await Course.aggregate([
-      { $group: { _id: "$skillLevel", count: { $sum: 1 } } },
+      {$group: {_id: "$skillLevel", count: {$sum: 1}}},
     ]);
 
     return ServiceResponse.success(
       "Successfully fetched skill level distribution",
       data,
-      StatusCodes.OK,
+      StatusCodes.OK
     );
   }
 
@@ -332,7 +427,7 @@ class CourseService {
         $project: {
           title: 1,
           enrollmentCount: {
-            $size: { $ifNull: ["$participants", []] }, // ← default to empty array
+            $size: {$ifNull: ["$participants", []]}, // ← default to empty array
           },
         },
       },
@@ -341,7 +436,7 @@ class CourseService {
     return ServiceResponse.success(
       "Successfully fetched all course enrollments",
       data,
-      StatusCodes.OK,
+      StatusCodes.OK
     );
   }
 
@@ -351,18 +446,18 @@ class CourseService {
         $project: {
           title: 1,
           enrollmentCount: {
-            $size: { $ifNull: ["$participants", []] }, // ← default to empty array
+            $size: {$ifNull: ["$participants", []]}, // ← default to empty array
           },
         },
       },
-      { $sort: { enrollmentCount: -1 } },
-      { $limit: 5 },
+      {$sort: {enrollmentCount: -1}},
+      {$limit: 5},
     ]);
 
     return ServiceResponse.success(
       "Successfully fetched top enrolled courses",
       data,
-      StatusCodes.OK,
+      StatusCodes.OK
     );
   }
 
@@ -386,8 +481,8 @@ class CourseService {
 
   // note: this what I am working with to update the course benchmark, what I want to do now is that if the benchmark does not exist, I want a benchmark to be created for it, so "upsert"
   public async updateCourseBenchmark(
-    payload: { retakes: number; benchmark: number },
-    id: string,
+    payload: {retakes: number; benchmark: number},
+    id: string
   ) {
     const bookmark = await CourseBenchmark.findByIdAndUpdate(id, payload, {
       new: true,
@@ -399,7 +494,7 @@ class CourseService {
   async fetchCourseAssesments(id: string, userRole: string) {
     const role = userRole.toLowerCase();
 
-    let query = CourseAssessment.find({ courseId: id });
+    let query = CourseAssessment.find({courseId: id});
     if (role === "admin" || role === "superadmin") {
       query = query.select("+options.isCorrect");
     }
@@ -437,14 +532,14 @@ class CourseService {
   public async submitCourseAssessment(
     userId: string,
     courseId: string,
-    answers: { questionId: string; selectedOptionId: number }[],
+    answers: {questionId: string; selectedOptionId: number}[]
   ) {
     const session = await mongoose.startSession();
     session.startTransaction();
 
     try {
-      const questions = await CourseAssessment.find({ courseId }).select(
-        "+options.isCorrect",
+      const questions = await CourseAssessment.find({courseId}).select(
+        "+options.isCorrect"
       );
 
       if (!questions.length) {
@@ -452,7 +547,7 @@ class CourseService {
         return ServiceResponse.failure(
           "No assessment questions found",
           null,
-          StatusCodes.NOT_FOUND,
+          StatusCodes.NOT_FOUND
         );
       }
 
@@ -477,7 +572,7 @@ class CourseService {
         return ServiceResponse.failure(
           "No progress found",
           null,
-          StatusCodes.NOT_FOUND,
+          StatusCodes.NOT_FOUND
         );
       }
 
@@ -486,14 +581,14 @@ class CourseService {
         return ServiceResponse.failure(
           "No more retakes allowed",
           null,
-          StatusCodes.FORBIDDEN,
+          StatusCodes.FORBIDDEN
         );
       }
 
       // Convert answers to proper ObjectIds
       const validatedAnswers = questions.map((question) => {
         const userAnswer = answers.find(
-          (a) => a.questionId === question._id.toString(),
+          (a) => a.questionId === question._id.toString()
         );
         const correctOption = question.options.find((o) => o.isCorrect);
 
@@ -508,7 +603,7 @@ class CourseService {
       // Calculate score
       const correctCount = validatedAnswers.filter((a) => a.isCorrect).length;
       const scorePercent = Number(
-        ((correctCount / questions.length) * 100).toFixed(2),
+        ((correctCount / questions.length) * 100).toFixed(2)
       );
       const passed = scorePercent >= passingScore;
       const nextAttempt = progress.currentAttempt + 1;
@@ -537,7 +632,7 @@ class CourseService {
         if (!progress.certificateIssued) {
           const emailResponse = await certificateService.issueCertificate(
             userId,
-            courseId,
+            courseId
           );
 
           progress.certificateIssued = true;
@@ -546,7 +641,7 @@ class CourseService {
         progress.status = CourseStatusEnum.FAILED;
       }
 
-      await progress.save({ session });
+      await progress.save({session});
       await session.commitTransaction();
 
       // Prepare corrections
@@ -571,14 +666,14 @@ class CourseService {
             corrections,
           },
         },
-        StatusCodes.OK,
+        StatusCodes.OK
       );
     } catch (error) {
       await session.abortTransaction();
       return ServiceResponse.failure(
         "Internal Server Error",
         null,
-        StatusCodes.INTERNAL_SERVER_ERROR,
+        StatusCodes.INTERNAL_SERVER_ERROR
       );
     } finally {
       session.endSession();
@@ -588,11 +683,11 @@ class CourseService {
   async uploadCourseCertificate(cloudinary_image: string, courseId: string) {
     try {
       const course = await Course.findByIdAndUpdate(
-        { _id: courseId },
+        {_id: courseId},
         {
-          $set: { certificate: cloudinary_image },
+          $set: {certificate: cloudinary_image},
         },
-        { new: true },
+        {new: true}
       );
 
       return course;
@@ -608,7 +703,7 @@ class CourseService {
         return ServiceResponse.failure(
           "Course not found",
           null,
-          StatusCodes.NOT_FOUND,
+          StatusCodes.NOT_FOUND
         );
       }
 
@@ -619,7 +714,7 @@ class CourseService {
         return ServiceResponse.failure(
           "Course benchmark not set",
           null,
-          StatusCodes.BAD_REQUEST,
+          StatusCodes.BAD_REQUEST
         );
       }
 
@@ -643,7 +738,7 @@ class CourseService {
               moduleId: modules[0].module,
             },
           },
-          StatusCodes.OK,
+          StatusCodes.OK
         );
       }
 
@@ -662,33 +757,33 @@ class CourseService {
         return ServiceResponse.failure(
           "Failed to create progress document",
           null,
-          StatusCodes.BAD_REQUEST,
+          StatusCodes.BAD_REQUEST
         );
       }
 
       const updatedCourse = await Course.findByIdAndUpdate(
         courseId,
-        { $push: { progress: progress._id } },
-        { new: true },
+        {$push: {progress: progress._id}},
+        {new: true}
       );
       if (!updatedCourse) {
         return ServiceResponse.failure(
           "Course not found",
           null,
-          StatusCodes.NOT_FOUND,
+          StatusCodes.NOT_FOUND
         );
       }
 
       const updatedUser = await User.findByIdAndUpdate(
         userId,
-        { $push: { progress: progress._id, courses: courseDoc._id } },
-        { new: true },
+        {$push: {progress: progress._id, courses: courseDoc._id}},
+        {new: true}
       );
       if (!updatedUser) {
         return ServiceResponse.failure(
           "User not found",
           null,
-          StatusCodes.NOT_FOUND,
+          StatusCodes.NOT_FOUND
         );
       }
 
@@ -702,21 +797,19 @@ class CourseService {
             moduleId: modules[0].module,
           },
         },
-        StatusCodes.OK,
+        StatusCodes.OK
       );
     } catch (error) {
       return ServiceResponse.failure(
         "Internal Server Error",
         null,
-        StatusCodes.INTERNAL_SERVER_ERROR,
+        StatusCodes.INTERNAL_SERVER_ERROR
       );
     }
   }
 
   async fetchCourseSummary(id: string) {
-    const course = await Course.findById({ _id: id }).populate(
-      "course_modules",
-    );
+    const course = await Course.findById({_id: id}).populate("course_modules");
 
     if (!course) {
       return {
@@ -741,20 +834,20 @@ class CourseService {
     try {
       // test: check if it is correct!
 
-      const user = await User.findById({ _id: userId });
+      const user = await User.findById({_id: userId});
       if (!user) {
         throw new Error("User not found");
       }
       const userEnrolledCourseIds = new Set(
         user.courseEnrollments?.map((enrollment) =>
-          enrollment.course.toString(),
-        ) || [],
+          enrollment.course.toString()
+        ) || []
       );
 
       const now = new Date();
       const defaultDuration = durationDays || 90;
       const expiresAt = new Date(
-        now.getTime() + defaultDuration * 24 * 60 * 60 * 1000,
+        now.getTime() + defaultDuration * 24 * 60 * 60 * 1000
       );
 
       const newCourseObjectIds: Types.ObjectId[] = [];
@@ -785,7 +878,7 @@ class CourseService {
         if (!course) continue;
 
         const participantIds = new Set(
-          course.participants?.map((id) => id.toString()) || [],
+          course.participants?.map((id) => id.toString()) || []
         );
 
         // Add user to course participants if not already there
@@ -798,7 +891,7 @@ class CourseService {
           // Remove from past participants if user was there
           if (course.pastParticipants?.some((id) => id.toString() === userId)) {
             course.pastParticipants = course.pastParticipants.filter(
-              (id) => id.toString() !== userId,
+              (id) => id.toString() !== userId
             );
           }
           // test: check if this place works as expected
@@ -816,10 +909,10 @@ class CourseService {
       const users = await fileParserService.parseCsv(payload.file);
       const results = await Promise.all(
         users.map(async (user) => {
-          const existingUser = await User.findOne({ email: user.email });
+          const existingUser = await User.findOne({email: user.email});
 
           let password;
-          let token: { userToken: string; hashedToken: string };
+          let token: {userToken: string; hashedToken: string};
           let createdUser;
 
           token = generateEmailInvitationToken();
@@ -841,10 +934,10 @@ class CourseService {
 
           const userToUse = existingUser ?? createdUser;
           const currentCourses = new Set(
-            userToUse.courses?.map((id) => id.toString()) || [],
+            userToUse.courses?.map((id) => id.toString()) || []
           );
           const allCoursesAssigned = payload.courseIds.every((id) =>
-            currentCourses.has(id),
+            currentCourses.has(id)
           );
 
           if (allCoursesAssigned) {
@@ -885,16 +978,16 @@ class CourseService {
             },
           });
           if (emailResponse.status !== "ok") {
-            return { email: user.email, success: false };
+            return {email: user.email, success: false};
           }
 
-          return { email: user.email, success: true };
-        }),
+          return {email: user.email, success: true};
+        })
       );
 
       const failed = results.filter((r) => !r.success);
       const alreadyAssigned = results.filter((r) =>
-        r.message?.includes("already assigned"),
+        r.message?.includes("already assigned")
       );
       const successful =
         results.length - failed.length - alreadyAssigned.length;
@@ -905,13 +998,14 @@ class CourseService {
           failedEmails: failed.map((f) => f.email),
           alreadyAssignedEmails: alreadyAssigned.map((a) => a.email),
         },
-        StatusCodes.OK,
+        StatusCodes.OK
       );
     } catch (error) {
+      console.log("error", error);
       return ServiceResponse.failure(
         "Internal server error",
         null,
-        StatusCodes.INTERNAL_SERVER_ERROR,
+        StatusCodes.INTERNAL_SERVER_ERROR
       );
     }
   }
@@ -929,7 +1023,7 @@ class CourseService {
    */
   static async unenrollUserFromCourse(
     userId: mongoose.Types.ObjectId | string,
-    courseId: mongoose.Types.ObjectId | string,
+    courseId: mongoose.Types.ObjectId | string
   ): Promise<boolean> {
     const course = await Course.findById(courseId);
 
@@ -952,7 +1046,7 @@ class CourseService {
   static async enrollUserInCourse(
     userId: mongoose.Types.ObjectId | string,
     courseId: mongoose.Types.ObjectId | string,
-    durationDays?: number,
+    durationDays?: number
   ): Promise<Date> {
     const course = await Course.findById(courseId);
 
@@ -973,7 +1067,7 @@ class CourseService {
    */
   static async hasUserAccessToCourse(
     userId: mongoose.Types.ObjectId | string,
-    courseId: mongoose.Types.ObjectId | string,
+    courseId: mongoose.Types.ObjectId | string
   ): Promise<boolean> {
     const user = await User.findById(userId);
 
@@ -989,7 +1083,7 @@ class CourseService {
 
     return user.courseEnrollments.some(
       (enrollment) =>
-        enrollment.course.equals(courseObjectId) && enrollment.expiresAt > now,
+        enrollment.course.equals(courseObjectId) && enrollment.expiresAt > now
     );
   }
 
@@ -999,7 +1093,7 @@ class CourseService {
    * @returns Array of course IDs
    */
   static async getUserActiveCourses(
-    userId: mongoose.Types.ObjectId | string,
+    userId: mongoose.Types.ObjectId | string
   ): Promise<mongoose.Types.ObjectId[]> {
     const user = await User.findById(userId);
 
@@ -1028,12 +1122,12 @@ class CourseService {
   }
 
   public async softDelete(courseId: string) {
-    const course = await Course.findById({ id: courseId });
+    const course = await Course.findById({id: courseId});
     if (!course) {
       throw new Error("Course not found");
     }
 
-    const coupons = await Coupon.find({ courseId });
+    const coupons = await Coupon.find({courseId});
 
     for (const coupon of coupons) {
       coupon.isDeleted = true;
@@ -1046,7 +1140,7 @@ class CourseService {
     return ServiceResponse.success(
       "Course deleted successfully",
       {},
-      StatusCodes.OK,
+      StatusCodes.OK
     );
   }
 
@@ -1056,7 +1150,7 @@ class CourseService {
     return ServiceResponse.success(
       "Course deleted successfully",
       course,
-      StatusCodes.OK,
+      StatusCodes.OK
     );
   }
 }

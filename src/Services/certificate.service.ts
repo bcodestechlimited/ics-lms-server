@@ -1,16 +1,19 @@
+import axios from "axios";
 import fs from "fs/promises";
 import {StatusCodes} from "http-status-codes";
 import path from "path";
-import {PDFDocument} from "pdf-lib";
-import {CertificateQueryOptions} from "../interfaces/certificate.interface";
+import {PDFDocument, StandardFonts, rgb} from "pdf-lib";
 import CertificateTemplate from "../models/certificate-template.model";
 import Certificate from "../models/certificate.model";
 import Course from "../models/Course";
 import CourseCompletion from "../models/course-completion.model";
-import User from "../models/User";
+import User, {IUserBase} from "../models/User";
+import {IQueryParams, UserSortBy} from "../shared/query.interface";
+import {coerceNumber} from "../utils/course-helpers";
+import {paginate} from "../utils/paginate";
+import {ApiSuccess} from "../utils/response-handler";
 import {ServiceResponse} from "../utils/service-response";
 import {emailService} from "./mail.service";
-import axios from "axios";
 
 const UPLOAD_ROOT = path.join(process.cwd(), "uploads");
 const CERT_FOLDER = "certificates";
@@ -125,6 +128,173 @@ class CertificateService {
     }
   }
 
+  // todo: fix the error in this code
+  public async generatePDF(
+    studentName: string,
+    courseTitle: string,
+    issueDate: string
+  ): Promise<Buffer> {
+    // 1) Load template
+    const templateBuffer = await this.fetchTemplateBuffer();
+    const pdfDoc = await PDFDocument.load(templateBuffer);
+
+    // 2) Try AcroForm first
+    try {
+      const form = pdfDoc.getForm();
+      const fieldNames = new Set(form.getFields().map((f) => f.getName()));
+      const certificateNumber = await this.generateCertificateNumber();
+
+      // Fill by available fields
+      if (fieldNames.has("studentName")) {
+        form.getTextField("studentName").setText(studentName);
+      } else if (fieldNames.has("firstName") || fieldNames.has("lastName")) {
+        const [firstName, ...rest] = studentName.trim().split(/\s+/);
+        const lastName = rest.join(" ");
+        if (fieldNames.has("firstName"))
+          form.getTextField("firstName").setText(firstName || "");
+        if (fieldNames.has("lastName"))
+          form.getTextField("lastName").setText(lastName || "");
+      }
+
+      if (fieldNames.has("courseTitle")) {
+        form.getTextField("courseTitle").setText(courseTitle);
+      }
+      if (fieldNames.has("issueDate")) {
+        form.getTextField("issueDate").setText(issueDate);
+      }
+      if (fieldNames.has("certificateNumber")) {
+        form.getTextField("certificateNumber").setText(certificateNumber);
+      }
+
+      form.flatten();
+      const pdfBytes = await pdfDoc.save();
+      return Buffer.from(pdfBytes);
+    } catch {
+      // No valid form fields → fall back to overlay rendering
+    }
+
+    // 3) Overlay fallback with neat typography
+    const page = pdfDoc.getPages()[0];
+    const {width, height} = page.getSize();
+
+    // Fonts: try custom TTFs (assets/fonts), fall back to standard fonts
+    const fontsDir = path.join(process.cwd(), "assets", "fonts");
+    const tryReadFont = async (file: string) => {
+      try {
+        return await fs.readFile(path.join(fontsDir, file));
+      } catch {
+        return undefined;
+      }
+    };
+    const playfairBold = await tryReadFont("PlayfairDisplay-Bold.ttf");
+    const interRegular = await tryReadFont("Inter-Regular.ttf");
+
+    const fontName = playfairBold
+      ? await pdfDoc.embedFont(StandardFonts.Helvetica)
+      : await pdfDoc.embedFont(StandardFonts.TimesRomanBold);
+    const fontBody = interRegular
+      ? await pdfDoc.embedFont(StandardFonts.Helvetica)
+      : await pdfDoc.embedFont(StandardFonts.Helvetica);
+
+    const certificateNumber = await this.generateCertificateNumber();
+
+    const POS = {
+      studentName: {
+        x: 0.5,
+        y: 0.62,
+        maxWidth: 0.78,
+        size: 34,
+        align: "center" as const,
+      },
+      courseTitle: {
+        x: 0.5,
+        y: 0.49,
+        maxWidth: 0.8,
+        size: 18,
+        align: "center" as const,
+      },
+      issueDate: {
+        x: 0.5,
+        y: 0.43,
+        maxWidth: 0.4,
+        size: 14,
+        align: "center" as const,
+      },
+      certNumber: {
+        x: 0.2,
+        y: 0.12,
+        maxWidth: 0.4,
+        size: 12,
+        align: "left" as const,
+      },
+    };
+
+    const drawText = (
+      text: string,
+      cfg: {
+        x: number;
+        y: number;
+        maxWidth: number;
+        size: number;
+        align: "left" | "center" | "right";
+        font: any;
+        color?: any;
+      }
+    ) => {
+      const px = width * cfg.x;
+      const py = height * cfg.y;
+      const maxW = width * cfg.maxWidth;
+      const finalSize = this.fitTextToWidth(text, cfg.font, cfg.size, maxW);
+      const textWidth = cfg.font.widthOfTextAtSize(text, finalSize);
+
+      let x = px;
+      if (cfg.align === "center") x = px - textWidth / 2;
+      if (cfg.align === "right") x = px - textWidth;
+
+      page.drawText(text, {
+        x,
+        y: py,
+        size: finalSize,
+        font: cfg.font,
+        color: cfg.color ?? rgb(0, 0, 0),
+      });
+    };
+
+    // Render text
+    drawText(studentName, {...POS.studentName, font: fontName});
+    drawText(courseTitle, {...POS.courseTitle, font: fontBody});
+    drawText(issueDate, {...POS.issueDate, font: fontBody});
+    drawText(certificateNumber, {...POS.certNumber, font: fontBody});
+
+    const pdfBytes = await pdfDoc.save();
+    return Buffer.from(pdfBytes);
+  }
+
+  private async fetchTemplateBuffer(): Promise<Uint8Array> {
+    const doc = await CertificateTemplate.findOne();
+    if (!doc) {
+      throw new Error("No certificate template configured in DB");
+    }
+
+    const response = await axios.get<ArrayBuffer>(doc.url, {
+      responseType: "arraybuffer",
+    });
+    return new Uint8Array(response.data);
+  }
+
+  private fitTextToWidth(
+    text: string,
+    font: any,
+    initialSize: number,
+    maxWidth: number
+  ) {
+    let size = initialSize;
+    while (size > 8 && font.widthOfTextAtSize(text, size) > maxWidth) {
+      size -= 0.5;
+    }
+    return size;
+  }
+
   // note: special admin service to test the certificate
   public async testIssueCertificate() {
     try {
@@ -198,103 +368,47 @@ class CertificateService {
     }
   }
 
-  private async fetchTemplateBuffer(): Promise<Uint8Array> {
-    const doc = await CertificateTemplate.findOne();
-    if (!doc) {
-      throw new Error("No certificate template configured in DB");
+  public async fetchStudentsWithIssuedCertificate(query: IQueryParams) {
+    const page = coerceNumber(query.page, 1);
+    const limit = coerceNumber(query.limit, 20);
+    const search = (query.search ?? "").trim();
+    const sortBy = (query.sortBy ?? "createdAt") as UserSortBy;
+    const sortOrder = query.sortOrder === "asc" ? 1 : -1;
+    const sort: Record<string, 1 | -1> = {};
+
+    const filterQuery: Record<string, any> = {};
+    if (search) {
+      filterQuery.$or = [
+        {firstName: {$regex: search, $options: "i"}},
+        {lastName: {$regex: search, $options: "i"}},
+        {email: {$regex: search, $options: "i"}},
+      ];
     }
 
-    const response = await axios.get<ArrayBuffer>(doc.url, {
-      responseType: "arraybuffer",
+    switch (sortBy) {
+      case "email":
+        sort.email = sortOrder;
+        break;
+      case "createdAt":
+        sort.createdAt = sortOrder;
+        break;
+      default:
+        sort.createdAt = -1;
+        break;
+    }
+
+    const {documents: users, pagination} = await paginate<IUserBase>({
+      model: User,
+      query: filterQuery,
+      page,
+      limit,
+      sort,
     });
-    return new Uint8Array(response.data);
-  }
 
-  public async generatePDF(
-    studentName: string,
-    courseTitle: string,
-    issueDate: string
-  ): Promise<Buffer> {
-    // 1. Load the form-enabled template
-    const templateBuffer = await this.fetchTemplateBuffer();
-
-    // 2. Grab the AcroForm
-    const pdfDoc = await PDFDocument.load(templateBuffer);
-    const form = pdfDoc.getForm();
-
-    // 3. Fill each field by name
-    form.getTextField("studentName").setText(studentName);
-    form.getTextField("courseTitle").setText(courseTitle);
-    form.getTextField("issueDate").setText(issueDate);
-
-    // 4. Flatten form so the fields become static text
-    form.flatten();
-
-    // 5. Save and return as a Buffer
-    const pdfBytes = await pdfDoc.save();
-    return Buffer.from(pdfBytes);
-  }
-
-  // private async getTemplatePath() {
-  //   try {
-  //     const doc = await CertificateTemplate.findOne();
-  //     if (!doc) {
-  //       throw new Error("No certificate template found");
-  //     }
-
-  //     // Verify the file exists
-  //     try {
-  //       await fs.access(doc.path, fs.constants.R_OK);
-  //     } catch {
-  //       throw new Error(
-  //         `Certificate template file not found or unreadable at path: ${doc.path}`
-  //       );
-  //     }
-  //     return doc.path;
-  //   } catch (error) {
-  //     throw new Error("Failed to retrieve certificate template");
-  //   }
-  // }
-
-  public async fetchStudentsWithIssuedCertificate({
-    options,
-    query,
-  }: CertificateQueryOptions) {
-    try {
-      const certificates = await Certificate.paginate(query, {
-        page: options.page,
-        limit: options.limit,
-        sort: options.sort,
-        populate: [
-          {path: "userId", select: "firstName lastName email"},
-          {path: "courseId", select: "title"},
-        ],
-        lean: true,
-      });
-
-      const meta = {
-        total: certificates.totalDocs,
-        limit: certificates.limit,
-        page: certificates.page,
-        pages: certificates.totalPages,
-        hasNextPage: certificates.hasNextPage,
-        hasPrevPage: certificates.hasPrevPage,
-        nextPage: certificates.nextPage,
-        prevPage: certificates.prevPage,
-      };
-
-      return ServiceResponse.success(
-        "Fetched all student with issued certificate",
-        {data: certificates.docs, meta},
-        StatusCodes.OK
-      );
-    } catch (error) {
-      return ServiceResponse.failure(
-        "An error occurred while fetching certificate",
-        null,
-        StatusCodes.INTERNAL_SERVER_ERROR
-      );
-    }
+    return ApiSuccess.ok("Certificates retrieved successfully", {
+      users,
+      pagination,
+    });
   }
 
   public async fetchCertificatesByUserId({
@@ -339,7 +453,38 @@ class CertificateService {
       },
     };
   }
+
+  private async generateCertificateNumber() {
+    return "015";
+  }
 }
 
 export const certificateService = new CertificateService();
 export default CertificateService;
+
+/***
+ *   public async generatePDF(
+    studentName: string,
+    courseTitle: string,
+    issueDate: string
+  ): Promise<Buffer> {
+    // 1. Load the form-enabled template
+    const templateBuffer = await this.fetchTemplateBuffer();
+
+    // 2. Grab the AcroForm
+    const pdfDoc = await PDFDocument.load(templateBuffer);
+    const form = pdfDoc.getForm();
+
+    // 3. Fill each field by name
+    form.getTextField("studentName").setText(studentName);
+    form.getTextField("courseTitle").setText(courseTitle);
+    form.getTextField("issueDate").setText(issueDate);
+
+    // 4. Flatten form so the fields become static text
+    form.flatten();
+
+    // 5. Save and return as a Buffer
+    const pdfBytes = await pdfDoc.save();
+    return Buffer.from(pdfBytes);
+  }
+ */
