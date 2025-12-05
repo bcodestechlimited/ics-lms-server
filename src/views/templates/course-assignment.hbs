@@ -1,47 +1,62 @@
-<div
-  class="content"
-  style="padding: 40px 20px; font-family: Arial, sans-serif;"
->
-  <h1 style="font-size: 24px; margin-bottom: 20px; color: #2A2A2A;">
-    New Courses Assigned to You 🎓
-  </h1>
+{{#> base_template}}
+  {{#*inline "content"}}
 
-  <p style="margin-bottom: 16px; font-size: 15px; color: #444;">
-    Hi <strong>{{firstName}}</strong>,
-  </p>
+    <div style="text-align: center; padding-bottom: 20px;">
+      <img
+        src="https://cdn-icons-png.flaticon.com/512/2997/2997322.png"
+        alt="Courses Assigned"
+        width="80"
+        style="width: 80px; max-width: 100%; height: auto; border: 0; display: block; margin: 0 auto;"
+      />
+    </div>
 
-  <div>
-    <p style="margin-bottom: 20px; font-size: 15px; color: #444;">
-      We've just assigned new course(s) to your learning dashboard on
-      <strong>{{platformName}}</strong>. You can now access these resources and
-      begin your training immediately.
+    <h1 style="margin: 0 0 20px 0; font-size: 24px; line-height: 30px; color: #333333; font-weight: 700; text-align: center;">
+      New Courses Assigned 🎓
+    </h1>
+
+    <p style="margin: 0 0 15px 0; font-size: 16px; line-height: 24px; color: #555555;">
+      Hi <strong>{{firstName}},</strong>
     </p>
-    <p style="margin-bottom: 20px; font-size: 15px; color: #444;">
-      <strong>Please note:</strong> You have <strong>{{durationDays}} day(s)</strong> to complete the assigned course(s). After this period, access to the course(s) will be removed automatically, and they will be moved to your <em>Expired Courses</em> section for reference only.
-    </p>
-  </div>
 
-  <div
-    style="background: #F8F8F8; padding: 18px; border-radius: 8px; margin: 25px 0;"
-  >
-    <h2 style="font-size: 16px; margin-top: 0;">Next Steps:</h2>
-    <ul style="padding-left: 20px; font-size: 14px; color: #333;">
-      <li>Log in to your account</li>
-      <li>Go to your dashboard</li>
+    <p style="margin: 0 0 20px 0; font-size: 16px; line-height: 24px; color: #555555;">
+      We've just assigned new training material to your learning dashboard on <strong>{{platformName}}</strong>. You can access these resources and begin your training immediately.
+    </p>
+
+    <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin: 25px 0;">
+      <tr>
+        <td bgcolor="#fff9f7" style="padding: 20px; border-radius: 8px; border-left: 4px solid #FF502A;">
+          <p style="margin: 0; font-size: 15px; line-height: 22px; color: #333333;">
+            <strong>⚠️ Important Note:</strong><br>
+            You have <strong style="color: #FF502A;">{{durationDays}} day(s)</strong> to complete the assigned course(s).
+            <br><br>
+            <span style="font-size: 14px; color: #666;">After this period, access will be removed automatically and moved to your <em>Expired Courses</em> section.</span>
+          </p>
+        </td>
+      </tr>
+    </table>
+
+    <p style="margin: 0 0 10px 0; font-size: 16px; font-weight: bold; color: #333333;">
+      Your Next Steps:
+    </p>
+    <ul style="margin: 0 0 25px 0; padding-left: 20px; font-size: 15px; line-height: 24px; color: #555555;">
+      <li style="margin-bottom: 5px;">Log in to your account.</li>
+      <li style="margin-bottom: 5px;">Navigate to your Dashboard.</li>
       <li>Start learning!</li>
     </ul>
-  </div>
 
-  <div class="button-container" style="margin: 30px 0;">
-    <a
-      href="{{loginUrl}}"
-      style="background: #FF502A; color: white; padding: 12px 30px; border-radius: 5px; font-weight: bold; text-decoration: none; display: inline-block;"
-    >
-      Go to Dashboard
-    </a>
-  </div>
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 30px auto;">
+      <tr>
+        <td align="center" bgcolor="#FF502A" style="border-radius: 4px;">
+          <a href="{{loginUrl}}" target="_blank" style="font-size: 16px; font-family: Helvetica, Arial, sans-serif; color: #ffffff; text-decoration: none; padding: 15px 30px; border-radius: 4px; border: 1px solid #FF502A; display: inline-block; font-weight: bold;">
+            Go to Dashboard
+          </a>
+        </td>
+      </tr>
+    </table>
 
-  <p style="margin-top: 25px; font-size: 14px;">
-    <em>Let’s grow your skills and achieve great things!</em>
-  </p>
-</div>
+    <p style="margin: 0; font-size: 14px; line-height: 21px; color: #999999; text-align: center; font-style: italic;">
+      Let’s grow your skills and achieve great things!
+    </p>
+
+  {{/inline}}
+{{/base_template}}
