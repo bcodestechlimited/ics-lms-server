@@ -46,6 +46,7 @@ const APP_CONFIG = Object.freeze({
   BASE_URL: process.env.BASE_URL || "",
   ACCESS_TOKEN_SECRET:
     process.env.ACCESS_TOKEN_SECRET || "my-super-secret-ics-@-academy",
+  MONGO_URI: process.env.MONGO_URI || "",
   NODE_ENV: process.env.NODE_ENV || "development",
   CLOUDINARY_NAME: process.env.CLOUDINARY_NAME || "",
   CLOUDINARY_API_KEY: process.env.CLOUDINARY_KEY || "",

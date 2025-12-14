@@ -1,17 +1,19 @@
 import bcrypt from "bcryptjs";
 import dayjs from "dayjs";
-import {StatusCodes} from "http-status-codes";
+import { StatusCodes } from "http-status-codes";
 import mongoose from "mongoose";
-import {APP_CONFIG} from "../config/app.config";
-import {AdminQueryOptions} from "../interfaces/admin.interface";
+import { APP_CONFIG } from "../config/app.config";
+import { AdminQueryOptions } from "../interfaces/admin.interface";
 import CertificateTemplateModel from "../models/certificate-template.model";
 import Course from "../models/Course";
-import User, {UserRole} from "../models/User";
+import User, { UserRole } from "../models/User";
 import UserCourseExtensionRequest, {
   CourseRequestStatus,
 } from "../models/user-request.model";
-import {ServiceResponse} from "../utils/service-response";
-import {emailService} from "./mail.service";
+import { ServiceResponse } from "../utils/service-response";
+import { emailService } from "./mail.service";
+import { ApiError, ApiSuccess } from "../utils/response-handler";
+import xlsx from "xlsx";
 
 class AdminService {
   // test : this service
@@ -22,7 +24,7 @@ class AdminService {
     try {
       const userRequests = await UserCourseExtensionRequest.paginate(
         query,
-        options
+        options,
       );
 
       return ServiceResponse.success("Success", userRequests, StatusCodes.OK);
@@ -30,7 +32,7 @@ class AdminService {
       return ServiceResponse.failure(
         "Internal Server Error",
         null,
-        StatusCodes.INTERNAL_SERVER_ERROR
+        StatusCodes.INTERNAL_SERVER_ERROR,
       );
     }
   }
@@ -51,7 +53,7 @@ class AdminService {
         return ServiceResponse.failure(
           "Extension request not found",
           null,
-          StatusCodes.NOT_FOUND
+          StatusCodes.NOT_FOUND,
         );
       }
 
@@ -62,20 +64,20 @@ class AdminService {
         return ServiceResponse.failure(
           "User not found",
           null,
-          StatusCodes.NOT_FOUND
+          StatusCodes.NOT_FOUND,
         );
       }
 
       const expiredCourseIndex = user.expiredCourses.findIndex(
         (course) =>
-          course.course.toString() === extensionRequest.course.toString()
+          course.course.toString() === extensionRequest.course.toString(),
       );
 
       if (expiredCourseIndex === -1) {
         return ServiceResponse.failure(
           "Course not found in user's expired courses",
           null,
-          StatusCodes.BAD_REQUEST
+          StatusCodes.BAD_REQUEST,
         );
       }
 
@@ -83,7 +85,7 @@ class AdminService {
 
       const currentExpiry = new Date(expiredCourse.expiresAt);
       const newExpiry = new Date(
-        currentExpiry.getTime() + extensionDays * 24 * 60 * 60 * 1000
+        currentExpiry.getTime() + extensionDays * 24 * 60 * 60 * 1000,
       );
       const newEnrollment = {
         course: new mongoose.Types.ObjectId(extensionRequest.course),
@@ -100,11 +102,11 @@ class AdminService {
         {
           status: CourseRequestStatus.APPROVED,
         },
-        {new: true}
+        { new: true },
       );
 
       const course = await Course.findByIdAndUpdate(extensionRequest.course, {
-        $addToSet: {participants: extensionRequest.user},
+        $addToSet: { participants: extensionRequest.user },
       });
 
       await emailService.sendEmailTemplate({
@@ -127,20 +129,20 @@ class AdminService {
           courseId: extensionRequest.course,
           userId: extensionRequest.user,
         },
-        StatusCodes.OK
+        StatusCodes.OK,
       );
     } catch (error) {
       return ServiceResponse.failure(
         "Internal Server Error",
         null,
-        StatusCodes.INTERNAL_SERVER_ERROR
+        StatusCodes.INTERNAL_SERVER_ERROR,
       );
     }
   }
 
   public async handleRejectUserRequestForCourseExtension(
     extensionId: string,
-    courseTitle: string
+    courseTitle: string,
   ) {
     try {
       const extensionRequest = await UserCourseExtensionRequest.findById({
@@ -151,7 +153,7 @@ class AdminService {
         return ServiceResponse.failure(
           "Extension request not found",
           null,
-          StatusCodes.NOT_FOUND
+          StatusCodes.NOT_FOUND,
         );
       }
       const user = await User.findById({
@@ -161,20 +163,20 @@ class AdminService {
         return ServiceResponse.failure(
           "User not found",
           null,
-          StatusCodes.NOT_FOUND
+          StatusCodes.NOT_FOUND,
         );
       }
 
       const expiredCourseIndex = user.expiredCourses.findIndex(
         (course) =>
-          course.course.toString() === extensionRequest.course.toString()
+          course.course.toString() === extensionRequest.course.toString(),
       );
 
       if (expiredCourseIndex === -1) {
         return ServiceResponse.failure(
           "Course not found in user's expired courses",
           null,
-          StatusCodes.BAD_REQUEST
+          StatusCodes.BAD_REQUEST,
         );
       }
 
@@ -183,7 +185,7 @@ class AdminService {
         {
           status: CourseRequestStatus.REJECTED,
         },
-        {new: true}
+        { new: true },
       );
 
       await emailService.sendEmailTemplate({
@@ -200,20 +202,20 @@ class AdminService {
       return ServiceResponse.success(
         "Request rejected successfully",
         null,
-        StatusCodes.OK
+        StatusCodes.OK,
       );
     } catch (error) {
       return ServiceResponse.failure(
         "Internal Server Error",
         null,
-        StatusCodes.INTERNAL_SERVER_ERROR
+        StatusCodes.INTERNAL_SERVER_ERROR,
       );
     }
   }
 
   public async uploadCertificateTemplate(
     secure_url: string,
-    public_id: string
+    public_id: string,
   ) {
     try {
       const updated = await CertificateTemplateModel.findOneAndUpdate(
@@ -223,27 +225,27 @@ class AdminService {
           publicId: public_id,
           updatedAt: new Date(),
         },
-        {upsert: true, new: true}
+        { upsert: true, new: true },
       );
 
       if (!updated) {
         return ServiceResponse.failure(
           "Failed to update certificate template record",
           null,
-          StatusCodes.BAD_REQUEST
+          StatusCodes.BAD_REQUEST,
         );
       }
 
       return ServiceResponse.success(
         "Certificate template uploaded successfully",
         updated,
-        StatusCodes.CREATED
+        StatusCodes.CREATED,
       );
     } catch (error) {
       return ServiceResponse.failure(
         "Failed to upload certificate template",
         null,
-        StatusCodes.INTERNAL_SERVER_ERROR
+        StatusCodes.INTERNAL_SERVER_ERROR,
       );
     }
   }
@@ -259,12 +261,12 @@ class AdminService {
     email: string;
     password: string;
   }) {
-    const exists = await User.findOne({email});
+    const exists = await User.findOne({ email });
     if (exists) {
       return ServiceResponse.failure(
         "Email already in use",
         null,
-        StatusCodes.BAD_REQUEST
+        StatusCodes.BAD_REQUEST,
       );
     }
 
@@ -287,8 +289,64 @@ class AdminService {
     return ServiceResponse.success(
       "Admin account created",
       admin,
-      StatusCodes.CREATED
+      StatusCodes.CREATED,
     );
+  }
+
+  public async verifyEmail(id: string) {
+    const user = await User.findById(id);
+    if (!user) {
+      throw ApiError.notFound("User not found");
+    }
+    user.isEmailVerified = true;
+    await user.save();
+    return ApiSuccess.ok("Email verified successfully", user);
+  }
+
+  public async bulkVerifyEmails(fileBuffer: Buffer, status: boolean) {
+    const workbook = xlsx.read(fileBuffer, { type: "buffer" });
+
+    if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
+      throw new Error("No sheets found in uploaded Excel file");
+    }
+
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+
+    const data = xlsx.utils.sheet_to_json<any>(sheet, {
+      defval: null,
+    });
+
+    let updatedCount = 0;
+    let skippedCount = 0;
+
+    for (const row of data) {
+      const emailValue = row.email || row.Email || row.EMAIL;
+
+      if (!emailValue) {
+        skippedCount++;
+        continue;
+      }
+
+      const email = emailValue.toString().toLowerCase().trim();
+
+      const result = await User.updateOne(
+        { email },
+        { $set: { isEmailVerified: status } },
+      );
+
+      if (result.matchedCount && result.matchedCount > 0) {
+        updatedCount++;
+      } else {
+        skippedCount++;
+      }
+    }
+
+    return ApiSuccess.ok("Bulk email verification processed", {
+      total: data.length,
+      updated: updatedCount,
+      skipped: skippedCount,
+    });
   }
 }
 

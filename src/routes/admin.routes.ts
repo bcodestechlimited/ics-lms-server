@@ -1,9 +1,9 @@
-import {Router} from "express";
-import {adminController} from "../controllers/admin.controller";
-import {authController} from "../controllers/auth.controller";
-import {certificateController} from "../controllers/certificate.controller";
-import {checkUserRole, isLocalAuthenticated} from "../Middlewares/Auth";
-import {apiLimiter} from "../Middlewares/RateLimiter";
+import { Router } from "express";
+import { adminController } from "../controllers/admin.controller";
+import { authController } from "../controllers/auth.controller";
+import { certificateController } from "../controllers/certificate.controller";
+import { checkUserRole, isLocalAuthenticated } from "../Middlewares/Auth";
+import { apiLimiter } from "../Middlewares/RateLimiter";
 import validateRequest from "../Middlewares/validation.middleware";
 import {
   AdminAcceptUserRequestForCourseExtensionSchema,
@@ -13,10 +13,24 @@ import {
 const router = Router();
 
 router.post(
+  "/bulk-verify-emails",
+  isLocalAuthenticated,
+  checkUserRole(["admin", "superadmin"]),
+  adminController.bulkVerifyEmails,
+);
+
+router.post(
+  "/verify-email",
+  isLocalAuthenticated,
+  checkUserRole(["admin", "superadmin"]),
+  adminController.verifyEmail,
+);
+
+router.post(
   "/upload-certificate-template",
   isLocalAuthenticated,
   checkUserRole(["admin", "superadmin"]),
-  adminController.uploadCertificateTemplate
+  adminController.uploadCertificateTemplate,
 );
 
 router.post(
@@ -24,7 +38,7 @@ router.post(
   apiLimiter,
   isLocalAuthenticated,
   checkUserRole(["superadmin"]),
-  adminController.createAdminAccount
+  adminController.createAdminAccount,
 );
 
 router.get(
@@ -32,7 +46,7 @@ router.get(
   apiLimiter,
   isLocalAuthenticated,
   checkUserRole(["admin", "superadmin"]),
-  adminController.getUserRequestForCourseExtension
+  adminController.getUserRequestForCourseExtension,
 );
 
 router.post(
@@ -41,7 +55,7 @@ router.post(
   validateRequest(AdminAcceptUserRequestForCourseExtensionSchema),
   isLocalAuthenticated,
   checkUserRole(["admin", "superadmin"]),
-  adminController.handleAcceptUserRequestForCourseExtension
+  adminController.handleAcceptUserRequestForCourseExtension,
 );
 
 router.patch(
@@ -50,14 +64,14 @@ router.patch(
   validateRequest(AdminRejectUserRequestForCourseExtensionSchema),
   isLocalAuthenticated,
   checkUserRole(["admin", "superadmin"]),
-  adminController.handleRejectUserRequestForCourseExtension
+  adminController.handleRejectUserRequestForCourseExtension,
 );
 
 router.post(
   "/test-issue-certificate",
   isLocalAuthenticated,
   checkUserRole(["admin", "superadmin"]),
-  certificateController.testIssueCertificate
+  certificateController.testIssueCertificate,
 );
 
 router.patch(
@@ -65,7 +79,7 @@ router.patch(
   apiLimiter,
   isLocalAuthenticated,
   checkUserRole(["admin", "superadmin"]),
-  authController.suspendUserAccount
+  authController.suspendUserAccount,
 );
 
 export default router;

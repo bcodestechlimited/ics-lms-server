@@ -1,41 +1,41 @@
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
-import {StatusCodes} from "http-status-codes";
-import {APP_CONFIG} from "../config/app.config";
-import {RegisterPayloadInterface} from "../interfaces/auth.interface";
-import User, {EmailInvitationEnum, UserRole} from "../models/User";
-import {ServiceResponse} from "../utils/service-response";
+import { StatusCodes } from "http-status-codes";
+import { APP_CONFIG } from "../config/app.config";
+import { RegisterPayloadInterface } from "../interfaces/auth.interface";
+import User, { EmailInvitationEnum, UserRole } from "../models/User";
+import { ServiceResponse } from "../utils/service-response";
 import {
   generateActivationToken,
   generateUserAccessToken,
   verifyActivationToken,
 } from "../utils/utils-token";
-import {emailService} from "./mail.service";
+import { emailService } from "./mail.service";
 
 class AuthService {
   public async login(email: string, password: string) {
     try {
-      const user = await User.findOne({email})
+      const user = await User.findOne({ email })
         .populate("password")
         .select(
-          "password firstName lastName email _id role privilege isEmailVerified isActive passwordVersion"
+          "password firstName lastName email _id role privilege isEmailVerified isActive passwordVersion",
         )
         .lean();
-        
-        if (!user) {
-          return ServiceResponse.failure(
-            "User not found",
-            null,
-            StatusCodes.NOT_FOUND
-          );
-        }
-        const isPasswordValid = await bcrypt.compare(password, user.password);
-      
+
+      if (!user) {
+        return ServiceResponse.failure(
+          "User not found",
+          null,
+          StatusCodes.NOT_FOUND,
+        );
+      }
+      const isPasswordValid = await bcrypt.compare(password, user.password);
+
       if (!isPasswordValid) {
         return ServiceResponse.failure(
           "Password or email is not correct",
           null,
-          StatusCodes.BAD_REQUEST
+          StatusCodes.BAD_REQUEST,
         );
       }
 
@@ -67,7 +67,7 @@ class AuthService {
       return ServiceResponse.failure(
         "Error",
         null,
-        StatusCodes.INTERNAL_SERVER_ERROR
+        StatusCodes.INTERNAL_SERVER_ERROR,
       );
     }
   }
@@ -80,12 +80,12 @@ class AuthService {
     telephone,
   }: RegisterPayloadInterface) {
     try {
-      const checkIfUserExists = await User.findOne({email});
+      const checkIfUserExists = await User.findOne({ email });
       if (checkIfUserExists) {
         return ServiceResponse.failure(
           "User account exists, Login!",
           null,
-          StatusCodes.BAD_REQUEST
+          StatusCodes.BAD_REQUEST,
         );
       }
       const passwordHash = await bcrypt.hash(password, 10);
@@ -102,7 +102,7 @@ class AuthService {
         return ServiceResponse.failure(
           "Error occurred while creating user account, Try again!",
           null,
-          StatusCodes.BAD_REQUEST
+          StatusCodes.BAD_REQUEST,
         );
       }
 
@@ -123,20 +123,20 @@ class AuthService {
         return ServiceResponse.failure(
           "Error sending mail, Try again!",
           null,
-          StatusCodes.BAD_REQUEST
+          StatusCodes.BAD_REQUEST,
         );
       }
 
       return ServiceResponse.success(
         "Account Created!, check your email to verify account",
         user,
-        StatusCodes.CREATED
+        StatusCodes.CREATED,
       );
     } catch (error) {
       return ServiceResponse.failure(
         "Internal Server Error",
         null,
-        StatusCodes.INTERNAL_SERVER_ERROR
+        StatusCodes.INTERNAL_SERVER_ERROR,
       );
     }
   }
@@ -147,7 +147,7 @@ class AuthService {
         return ServiceResponse.failure(
           "Error verifying email link",
           null,
-          StatusCodes.BAD_REQUEST
+          StatusCodes.BAD_REQUEST,
         );
       }
 
@@ -156,15 +156,15 @@ class AuthService {
         return ServiceResponse.failure(
           "Invalid or expired activation token",
           null,
-          StatusCodes.BAD_REQUEST
+          StatusCodes.BAD_REQUEST,
         );
       }
-      const user = await User.findById({_id: decoded.id});
+      const user = await User.findById({ _id: decoded.id });
       if (!user) {
         return ServiceResponse.failure(
           "User not found",
           null,
-          StatusCodes.NOT_FOUND
+          StatusCodes.NOT_FOUND,
         );
       }
       user.isEmailVerified = true;
@@ -175,29 +175,28 @@ class AuthService {
       return ServiceResponse.success(
         "Account activated successfully",
         payload,
-        StatusCodes.OK
+        StatusCodes.OK,
       );
     } catch (error) {
       return ServiceResponse.failure(
         "Internal Server Error",
         null,
-        StatusCodes.INTERNAL_SERVER_ERROR
+        StatusCodes.INTERNAL_SERVER_ERROR,
       );
     }
   }
 
   public async forgotPassword(email: string, resetUrl: string) {
     try {
-      const user = await User.findOne({email}).populate("passwordVersion");
+      const user = await User.findOne({ email }).populate("passwordVersion");
       if (!user) {
         return ServiceResponse.failure(
           "User not found",
           null,
-          StatusCodes.NOT_FOUND
+          StatusCodes.NOT_FOUND,
         );
       }
 
-     
       const resetToken = crypto.randomBytes(32).toString("hex");
       const hashedToken = crypto
         .createHash("sha256")
@@ -225,20 +224,20 @@ class AuthService {
         return ServiceResponse.failure(
           "Error sending mail, Try again!",
           null,
-          StatusCodes.BAD_REQUEST
+          StatusCodes.BAD_REQUEST,
         );
       }
 
       return ServiceResponse.success(
         "Password reset link sent successfully",
         null,
-        StatusCodes.OK
+        StatusCodes.OK,
       );
     } catch (error) {
       return ServiceResponse.failure(
         "Internal Server Error",
         null,
-        StatusCodes.INTERNAL_SERVER_ERROR
+        StatusCodes.INTERNAL_SERVER_ERROR,
       );
     }
   }
@@ -252,7 +251,7 @@ class AuthService {
 
       const user = await User.findOne({
         passwordResetToken: hashedToken,
-        passwordResetTokenExpires: {$gt: Date.now()},
+        passwordResetTokenExpires: { $gt: Date.now() },
       }).select("+passwordVersion");
       if (!user) {
         const expiredUser = await User.findOne({
@@ -263,13 +262,13 @@ class AuthService {
           return ServiceResponse.failure(
             "Token has expired. Please request a new password reset link.",
             null,
-            StatusCodes.BAD_REQUEST
+            StatusCodes.BAD_REQUEST,
           );
         } else {
           return ServiceResponse.failure(
             "Invalid token. Please request a new password reset link.",
             null,
-            StatusCodes.BAD_REQUEST
+            StatusCodes.BAD_REQUEST,
           );
         }
       }
@@ -307,13 +306,13 @@ class AuthService {
       return ServiceResponse.success(
         "Password reset successfully",
         responseObject,
-        StatusCodes.OK
+        StatusCodes.OK,
       );
     } catch (error) {
       return ServiceResponse.failure(
         "Internal server error",
         null,
-        StatusCodes.INTERNAL_SERVER_ERROR
+        StatusCodes.INTERNAL_SERVER_ERROR,
       );
     }
   }
@@ -321,19 +320,19 @@ class AuthService {
   // idea: future implementation
   public async inviteStaff(email: string) {
     try {
-      const checkUser = await User.findOne({email});
+      const checkUser = await User.findOne({ email });
       if (checkUser) {
         return ServiceResponse.failure(
           "User exists",
           null,
-          StatusCodes.BAD_REQUEST
+          StatusCodes.BAD_REQUEST,
         );
       }
     } catch (error) {
       return ServiceResponse.failure(
         "Internal server error",
         null,
-        StatusCodes.INTERNAL_SERVER_ERROR
+        StatusCodes.INTERNAL_SERVER_ERROR,
       );
     }
   }
@@ -341,17 +340,17 @@ class AuthService {
   public async updatePassword(
     userId: string,
     password: string,
-    newPassword: string
+    newPassword: string,
   ) {
     try {
       const user = await User.findById(userId).select(
-        "+password +passwordVersion"
+        "+password +passwordVersion",
       );
       if (!user) {
         return ServiceResponse.failure(
           "User not found",
           null,
-          StatusCodes.NOT_FOUND
+          StatusCodes.NOT_FOUND,
         );
       }
 
@@ -360,7 +359,7 @@ class AuthService {
         return ServiceResponse.failure(
           "Password is incorrect",
           null,
-          StatusCodes.UNAUTHORIZED
+          StatusCodes.UNAUTHORIZED,
         );
       }
 
@@ -380,13 +379,13 @@ class AuthService {
       return ServiceResponse.success(
         "Password updated successfully",
         responseObject,
-        StatusCodes.OK
+        StatusCodes.OK,
       );
     } catch (error) {
       return ServiceResponse.failure(
         "Internal server error",
         null,
-        StatusCodes.INTERNAL_SERVER_ERROR
+        StatusCodes.INTERNAL_SERVER_ERROR,
       );
     }
   }
@@ -409,7 +408,7 @@ class AuthService {
         return ServiceResponse.failure(
           "Invalid or expired invitation link",
           null,
-          StatusCodes.BAD_REQUEST
+          StatusCodes.BAD_REQUEST,
         );
       }
       user.isEmailVerified = true;
@@ -419,7 +418,7 @@ class AuthService {
       const updatePasswordResponse = await this.updatePassword(
         user?.id,
         password,
-        newPassword
+        newPassword,
       );
       if (!updatePasswordResponse.success) {
         return updatePasswordResponse;
@@ -436,20 +435,20 @@ class AuthService {
             role: user.role,
           },
         },
-        StatusCodes.OK
+        StatusCodes.OK,
       );
     } catch (error) {
       return ServiceResponse.failure(
         "Internal server error",
         null,
-        StatusCodes.INTERNAL_SERVER_ERROR
+        StatusCodes.INTERNAL_SERVER_ERROR,
       );
     }
   }
 
-  public async checkifUserExists(email: string){
-    const user = await User.findOne({email})
-    return user
+  public async checkifUserExists(email: string) {
+    const user = await User.findOne({ email });
+    return user;
   }
 }
 

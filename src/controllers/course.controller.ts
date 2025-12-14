@@ -826,7 +826,6 @@ class CourseController {
     const courseId = req.params.id;
 
     const serviceResponse = await courseService.softDelete(courseId);
-
     res.status(serviceResponse.statusCode).json(serviceResponse);
   }
 }

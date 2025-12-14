@@ -1122,7 +1122,7 @@ class CourseService {
   }
 
   public async softDelete(courseId: string) {
-    const course = await Course.findById({id: courseId});
+    const course = await Course.findById(courseId);
     if (!course) {
       throw new Error("Course not found");
     }

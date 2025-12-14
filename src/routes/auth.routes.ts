@@ -1,13 +1,13 @@
-import {Router} from "express";
-import {authController} from "../controllers/auth.controller.ts";
-import {userController} from "../controllers/user.controller.ts";
+import { Router } from "express";
+import { authController } from "../controllers/auth.controller.ts";
+import { userController } from "../controllers/user.controller.ts";
 import {
   checkUserRole,
   isAuthenticated,
   isLocalAuthenticated,
   validateUser,
 } from "../Middlewares/Auth.ts";
-import {apiLimiter} from "../Middlewares/RateLimiter.ts";
+import { apiLimiter } from "../Middlewares/RateLimiter.ts";
 import validateRequest from "../Middlewares/validation.middleware.ts";
 import {
   OnboardStaffSchema,
@@ -27,7 +27,7 @@ router.get(
   "/user-analytics",
   isLocalAuthenticated,
   checkUserRole(["admin", "superadmin"]),
-  userController.getUserAnalytics
+  userController.getUserAnalytics,
 );
 
 router
@@ -44,47 +44,47 @@ router.post(
   "/reset-password",
   apiLimiter,
   validateRequest(ResetPasswordSchema),
-  authController.resetPassword
+  authController.resetPassword,
 );
 
 router.get(
   "/my-certificates",
   apiLimiter,
   isAuthenticated,
-  userController.getMyCertificates
+  userController.getMyCertificates,
 );
 
 router.get(
   "/my-enrolled-courses",
   apiLimiter,
   isAuthenticated,
-  userController.getMyEnrolledCourses
+  userController.getMyEnrolledCourses,
 );
 
 router.get(
   "/my-assigned-courses",
   apiLimiter,
   isAuthenticated,
-  userController.getMyAssignedCourses
+  userController.getMyAssignedCourses,
 );
 
 router.post(
   "/staff-onboarding",
   validateRequest(OnboardStaffSchema),
-  authController.onboardStaff
+  authController.onboardStaff,
 );
 
 router.post(
   "/request-for-extension",
   validateRequest(UserRequestForCourseExtensionSchema),
   isAuthenticated,
-  userController.userCanRequestForCourseExtension
+  userController.userCanRequestForCourseExtension,
 );
 
 router.get(
   "/get-expired-courses",
   isAuthenticated,
-  userController.getUserExpiredCourses
+  userController.getUserExpiredCourses,
 );
 
 router.post("/logout", isAuthenticated, userController.logout);
@@ -93,14 +93,14 @@ router.put(
   "/update-profile",
   apiLimiter,
   isAuthenticated,
-  authController.updateProfile
+  authController.updateProfile,
 );
 
 router.put(
   "/update-password",
   validateRequest(UpdatePasswordSchema),
   isAuthenticated,
-  authController.updatePassword
+  authController.updatePassword,
 );
 
 router.route("/login").post(authController.login);
@@ -113,7 +113,7 @@ router.get(
   apiLimiter,
   isLocalAuthenticated,
   checkUserRole(["admin", "superadmin"]),
-  userController.getUserAnalytics
+  userController.getUserAnalytics,
 );
 
 router
