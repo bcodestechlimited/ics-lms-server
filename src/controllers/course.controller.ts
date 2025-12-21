@@ -18,7 +18,7 @@ import { bulkAssignCourseSchema } from "../Schema/course.schema";
 import { CourseService } from "../Services/course.service";
 import { uploadToCloudinary } from "../utils/cloudinary.utils";
 import { ServiceResponse } from "../utils/service-response";
-import {CourseQueryParams} from "../shared/query.interface";
+import { CourseQueryParams } from "../shared/query.interface";
 
 const courseService = new CourseService();
 const window = new JSDOM("").window;
@@ -55,7 +55,7 @@ class CourseController {
       if (!req.files || !req.files?.courseImage) {
         return res
           .status(400)
-          .json({message: "No file uploaded", success: false});
+          .json({ message: "No file uploaded", success: false });
       }
 
       const rawImage = req.files.courseImage;
@@ -76,7 +76,7 @@ class CourseController {
 
       const sanitizedCourseDescription = domPurify.sanitize(
         courseDescription,
-        APP_CONFIG.PURIFY_CONFIG
+        APP_CONFIG.PURIFY_CONFIG,
       );
 
       const tempFilePath = courseImage.tempFilePath;
@@ -91,9 +91,9 @@ class CourseController {
           ServiceResponse.failure(
             "Failed to upload course image",
             null,
-            StatusCodes.BAD_REQUEST
+            StatusCodes.BAD_REQUEST,
           ),
-          res
+          res,
         );
       }
 
@@ -111,9 +111,9 @@ class CourseController {
           ServiceResponse.failure(
             "Failed to create course",
             null,
-            StatusCodes.BAD_REQUEST
+            StatusCodes.BAD_REQUEST,
           ),
-          res
+          res,
         );
       }
 
@@ -121,18 +121,18 @@ class CourseController {
         ServiceResponse.success(
           "Course Created",
           course_response,
-          StatusCodes.CREATED
+          StatusCodes.CREATED,
         ),
-        res
+        res,
       );
     } catch (error) {
       handleServiceResponse(
         ServiceResponse.failure(
           "Internal Server Error",
           null,
-          StatusCodes.INTERNAL_SERVER_ERROR
+          StatusCodes.INTERNAL_SERVER_ERROR,
         ),
-        res
+        res,
       );
     }
   }
@@ -141,7 +141,7 @@ class CourseController {
   async createCourseAssessment(
     req: Request,
     res: Response,
-    next: NextFunction
+    next: NextFunction,
   ) {
     try {
       const courseId = req.body.courseId;
@@ -151,9 +151,9 @@ class CourseController {
           ServiceResponse.failure(
             "Course is not found",
             null,
-            StatusCodes.NOT_FOUND
+            StatusCodes.NOT_FOUND,
           ),
-          res
+          res,
         );
       }
       const payload = {
@@ -167,27 +167,27 @@ class CourseController {
       await Course.findByIdAndUpdate(
         courseId,
         {
-          $push: {course_assessment: response.data[0]._id},
+          $push: { course_assessment: response.data[0]._id },
         },
-        {new: true}
+        { new: true },
       );
 
       handleServiceResponse(
         ServiceResponse.success(
           "Course Assessment Created",
-          {data: response, success: true},
-          StatusCodes.CREATED
+          { data: response, success: true },
+          StatusCodes.CREATED,
         ),
-        res
+        res,
       );
     } catch (error) {
       handleServiceResponse(
         ServiceResponse.failure(
           "Failed to create course assessment",
           null,
-          500
+          500,
         ),
-        res
+        res,
       );
     }
   }
@@ -195,21 +195,21 @@ class CourseController {
   async updateCourseAssessment(
     req: Request,
     res: Response,
-    next: NextFunction
+    next: NextFunction,
   ) {
     try {
-      const {id} = req.params;
-      const {questions} = req.body;
+      const { id } = req.params;
+      const { questions } = req.body;
 
       const course = await Course.findById(id);
       if (!course) {
         return handleServiceResponse(
           ServiceResponse.failure(
             "Course not found",
-            {data: null, success: false},
-            StatusCodes.NOT_FOUND
+            { data: null, success: false },
+            StatusCodes.NOT_FOUND,
           ),
-          res
+          res,
         );
       }
 
@@ -224,11 +224,11 @@ class CourseController {
             updatedQuestions.push(updated as unknown as AssessmentDocument);
           }
         } else {
-          const created = await CourseAssessment.create({...q, courseId: id});
+          const created = await CourseAssessment.create({ ...q, courseId: id });
           updatedQuestions.push(created as unknown as AssessmentDocument);
 
           course.course_assessment.push(
-            created._id as unknown as Types.ObjectId
+            created._id as unknown as Types.ObjectId,
           );
           await course.save();
         }
@@ -237,19 +237,19 @@ class CourseController {
       handleServiceResponse(
         ServiceResponse.success(
           "Course Assessment updated",
-          {data: updatedQuestions, success: true},
-          StatusCodes.OK
+          { data: updatedQuestions, success: true },
+          StatusCodes.OK,
         ),
-        res
+        res,
       );
     } catch (error) {
       handleServiceResponse(
         ServiceResponse.failure(
           "Failed to update course assessment",
           null,
-          500
+          500,
         ),
-        res
+        res,
       );
     }
   }
@@ -276,9 +276,9 @@ class CourseController {
       await Course.findByIdAndUpdate(
         courseId,
         {
-          $set: {course_benchmark: response.data._id},
+          $set: { course_benchmark: response.data._id },
         },
-        {new: true}
+        { new: true },
       );
 
       res.status(201).json({
@@ -302,7 +302,7 @@ class CourseController {
       const courseId = req.body.courseId;
       const course = await Course.findById(courseId);
       if (!course) {
-        return res.status(404).json({message: "No course found"});
+        return res.status(404).json({ message: "No course found" });
       }
       const payload = {
         courseId: req.body.courseId,
@@ -316,9 +316,9 @@ class CourseController {
       await Course.findByIdAndUpdate(
         courseId,
         {
-          $set: {course_price: response.data._id},
+          $set: { course_price: response.data._id },
         },
-        {new: true}
+        { new: true },
       );
 
       res.status(201).json({
@@ -331,9 +331,9 @@ class CourseController {
         ServiceResponse.failure(
           "An error occurred while creating course pricing",
           null,
-          StatusCodes.INTERNAL_SERVER_ERROR
+          StatusCodes.INTERNAL_SERVER_ERROR,
         ),
-        res
+        res,
       );
     }
   }
@@ -352,7 +352,7 @@ class CourseController {
           {
             coursePricing: coursePrice,
           },
-          {new: true}
+          { new: true },
         );
       }
 
@@ -360,21 +360,21 @@ class CourseController {
         if (!courseId) {
           return res
             .status(StatusCodes.BAD_REQUEST)
-            .json({message: "courseId is required when creating pricing"});
+            .json({ message: "courseId is required when creating pricing" });
         }
 
         const course = await Course.findById(courseId);
         if (!course) {
           return res
             .status(StatusCodes.NOT_FOUND)
-            .json({message: "No course found"});
+            .json({ message: "No course found" });
         }
 
         pricing = await CoursePricing.create({
           courseId,
           coursePricing: coursePrice,
           ...(req.body.courseCoupon
-            ? {courseCoupon: req.body.courseCoupon}
+            ? { courseCoupon: req.body.courseCoupon }
             : {}),
         });
       }
@@ -382,22 +382,22 @@ class CourseController {
       const pricingCourseId = pricing.courseId;
       await Course.findByIdAndUpdate(
         pricingCourseId,
-        {$set: {course_price: pricing._id}},
-        {new: true}
+        { $set: { course_price: pricing._id } },
+        { new: true },
       );
 
       handleServiceResponse(
         ServiceResponse.success("Success", pricing, 200),
-        res
+        res,
       );
     } catch (error) {
       handleServiceResponse(
         ServiceResponse.failure(
           "Internal Server Error",
           null,
-          StatusCodes.INTERNAL_SERVER_ERROR
+          StatusCodes.INTERNAL_SERVER_ERROR,
         ),
-        res
+        res,
       );
     }
   }
@@ -408,7 +408,7 @@ class CourseController {
 
     const serviceResponse = await courseService.fetchCourseById(
       courseId,
-      userRole
+      userRole,
     );
 
     if (!serviceResponse.success) {
@@ -420,18 +420,16 @@ class CourseController {
 
   public async getCoursePricing(req: Request, res: Response) {
     const courseId = req.params.id;
-    const serviceResponse = await courseService.fetchCoursePriceByCourseId(
-      courseId
-    );
+    const serviceResponse =
+      await courseService.fetchCoursePriceByCourseId(courseId);
 
     res.status(serviceResponse.statusCode).json(serviceResponse);
   }
 
   public async getCourseBenchmark(req: Request, res: Response) {
     const courseId = req.params.id;
-    const serviceResponse = await courseService.fetchCourseBenchmarkByCourseId(
-      courseId
-    );
+    const serviceResponse =
+      await courseService.fetchCourseBenchmarkByCourseId(courseId);
 
     res.status(serviceResponse.statusCode).json(serviceResponse);
   }
@@ -446,25 +444,25 @@ class CourseController {
           ServiceResponse.failure(
             response.message,
             null,
-            StatusCodes.BAD_REQUEST
+            StatusCodes.BAD_REQUEST,
           ),
-          res
+          res,
         );
       }
 
       //idea: CREATE DTO
       handleServiceResponse(
-        ServiceResponse.success("Success", {data: response}, StatusCodes.OK),
-        res
+        ServiceResponse.success("Success", { data: response }, StatusCodes.OK),
+        res,
       );
     } catch (error) {
       handleServiceResponse(
         ServiceResponse.failure(
           "Internal Server Error",
           null,
-          StatusCodes.INTERNAL_SERVER_ERROR
+          StatusCodes.INTERNAL_SERVER_ERROR,
         ),
-        res
+        res,
       );
     }
   }
@@ -472,7 +470,7 @@ class CourseController {
   async updateCourseController(req: Request, res: Response) {
     try {
       const id = req.params.id;
-      const {courseTitle, courseDescription} = req.body;
+      const { courseTitle, courseDescription } = req.body;
       const payload = {};
       if (courseTitle) payload["title"] = courseTitle;
       if (courseDescription) payload["description"] = courseDescription;
@@ -483,24 +481,24 @@ class CourseController {
           ServiceResponse.failure(
             "Failed to update course",
             null,
-            StatusCodes.BAD_REQUEST
+            StatusCodes.BAD_REQUEST,
           ),
-          res
+          res,
         );
       }
 
       handleServiceResponse(
         ServiceResponse.success("Success", course, StatusCodes.OK),
-        res
+        res,
       );
     } catch (error) {
       handleServiceResponse(
         ServiceResponse.failure(
           "Internal Server Error",
           null,
-          StatusCodes.INTERNAL_SERVER_ERROR
+          StatusCodes.INTERNAL_SERVER_ERROR,
         ),
-        res
+        res,
       );
     }
   }
@@ -516,7 +514,7 @@ class CourseController {
 
       const response = await courseService.updateCourseBenchmark(
         payload,
-        benchmark_id
+        benchmark_id,
       );
 
       if (!response) {
@@ -524,24 +522,24 @@ class CourseController {
           ServiceResponse.failure(
             "Failed to update course benchmark",
             null,
-            StatusCodes.BAD_REQUEST
+            StatusCodes.BAD_REQUEST,
           ),
-          res
+          res,
         );
       }
 
       handleServiceResponse(
         ServiceResponse.success("Success", response, StatusCodes.OK),
-        res
+        res,
       );
     } catch (error) {
       handleServiceResponse(
         ServiceResponse.failure(
           "Internal Server Error",
           null,
-          StatusCodes.INTERNAL_SERVER_ERROR
+          StatusCodes.INTERNAL_SERVER_ERROR,
         ),
-        res
+        res,
       );
     }
   }
@@ -555,23 +553,23 @@ class CourseController {
           ServiceResponse.failure(
             "Failed to publish course",
             null,
-            StatusCodes.BAD_REQUEST
+            StatusCodes.BAD_REQUEST,
           ),
-          res
+          res,
         );
       }
       handleServiceResponse(
         ServiceResponse.success("Success", course, StatusCodes.OK),
-        res
+        res,
       );
     } catch (error) {
       handleServiceResponse(
         ServiceResponse.failure(
           "Internal Server Error",
           null,
-          StatusCodes.INTERNAL_SERVER_ERROR
+          StatusCodes.INTERNAL_SERVER_ERROR,
         ),
-        res
+        res,
       );
     }
   }
@@ -584,9 +582,9 @@ class CourseController {
           ServiceResponse.failure(
             "No file uploaded",
             null,
-            StatusCodes.BAD_REQUEST
+            StatusCodes.BAD_REQUEST,
           ),
-          res
+          res,
         );
       }
 
@@ -600,9 +598,9 @@ class CourseController {
           ServiceResponse.failure(
             "Failed to upload course image",
             null,
-            StatusCodes.BAD_REQUEST
+            StatusCodes.BAD_REQUEST,
           ),
-          res
+          res,
         );
       }
 
@@ -616,13 +614,13 @@ class CourseController {
 
       const course = await courseService.uploadCourseCertificate(
         cloudinary_image,
-        req.params.id
+        req.params.id,
       );
 
       if (!course) {
         return handleServiceResponse(
           ServiceResponse.failure("Failed", null, StatusCodes.NOT_FOUND),
-          res
+          res,
         );
       }
 
@@ -630,18 +628,18 @@ class CourseController {
         ServiceResponse.success(
           "Certificate Uploaded successfully",
           course,
-          StatusCodes.OK
+          StatusCodes.OK,
         ),
-        res
+        res,
       );
     } catch (error) {
       handleServiceResponse(
         ServiceResponse.failure(
           "Internal Server Error",
           null,
-          StatusCodes.INTERNAL_SERVER_ERROR
+          StatusCodes.INTERNAL_SERVER_ERROR,
         ),
-        res
+        res,
       );
     }
   }
@@ -652,35 +650,35 @@ class CourseController {
       const userRole = req.user?.role as string;
       const response = await courseService.fetchCourseAssesments(
         courseId,
-        userRole
+        userRole,
       );
       if (!response.success) {
         return handleServiceResponse(
           ServiceResponse.failure(
             response.message,
             null,
-            StatusCodes.BAD_REQUEST
+            StatusCodes.BAD_REQUEST,
           ),
-          res
+          res,
         );
       }
 
       handleServiceResponse(
         ServiceResponse.success(
           "Success",
-          {data: response.data},
-          StatusCodes.OK
+          { data: response.data },
+          StatusCodes.OK,
         ),
-        res
+        res,
       );
     } catch (error) {
       handleServiceResponse(
         ServiceResponse.failure(
           "Internal Server Error",
           null,
-          StatusCodes.INTERNAL_SERVER_ERROR
+          StatusCodes.INTERNAL_SERVER_ERROR,
         ),
-        res
+        res,
       );
     }
   }
@@ -688,19 +686,19 @@ class CourseController {
   public async submitCourseAssessment(req: ExtendedRequest, res: Response) {
     const userId = req.user?._id;
     const courseId = req.params.id;
-    const {answers} = req.body;
+    const { answers } = req.body;
 
     const response = await courseService.submitCourseAssessment(
       userId,
       courseId,
-      answers
+      answers,
     );
 
     res.status(response.statusCode).json(response);
   }
 
   async launchCourse(req: ExtendedRequest, res: Response) {
-    const {courseId} = req.params;
+    const { courseId } = req.params;
     const userId = req.user?._id;
     const response = await courseService.launchCourse(courseId, userId);
 
@@ -709,35 +707,35 @@ class CourseController {
 
   async getCourseSummary(req: Request, res: Response) {
     try {
-      const {id} = req.params;
+      const { id } = req.params;
       const response = await courseService.fetchCourseSummary(id);
       if (!response.success) {
         handleServiceResponse(
           ServiceResponse.failure(
             response.message,
             null,
-            StatusCodes.BAD_REQUEST
+            StatusCodes.BAD_REQUEST,
           ),
-          res
+          res,
         );
       }
 
       handleServiceResponse(
         ServiceResponse.success(
           "Success",
-          {data: response.data},
-          StatusCodes.OK
+          { data: response.data },
+          StatusCodes.OK,
         ),
-        res
+        res,
       );
     } catch (error) {
       handleServiceResponse(
         ServiceResponse.failure(
           "Internal Server Error",
           null,
-          StatusCodes.INTERNAL_SERVER_ERROR
+          StatusCodes.INTERNAL_SERVER_ERROR,
         ),
-        res
+        res,
       );
     }
   }
@@ -745,12 +743,12 @@ class CourseController {
   public async bulkAssigningOfCourses(
     req: Request,
     res: Response,
-    next: NextFunction
+    next: NextFunction,
   ) {
     if (!req.files?.file) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .json({message: "No file uploaded"});
+        .json({ message: "No file uploaded" });
     }
     const raw = req.files.file as UploadedFile | UploadedFile[];
     const uploadFile = Array.isArray(raw) ? raw[0] : raw;
@@ -778,14 +776,14 @@ class CourseController {
       courseIds: Array.isArray(rawCourses)
         ? rawCourses
         : rawCourses
-        ? [rawCourses]
-        : [],
+          ? [rawCourses]
+          : [],
     };
 
     try {
       const validated = bulkAssignCourseSchema.parse(normalizedBody);
 
-      const serviceResponse = await courseService.bulkAssigningOfCourses({
+      const serviceResponse = await courseService.triggerBulkAssignment({
         file: uploadFile,
         courseIds: validated.courseIds,
         durationDays: durationDays,
@@ -815,9 +813,8 @@ class CourseController {
   public async deleteCourse(req: Request, res: Response) {
     const courseId = req.params.id;
 
-    const serviceResponse = await courseService.deleteCourseByCourseId(
-      courseId
-    );
+    const serviceResponse =
+      await courseService.deleteCourseByCourseId(courseId);
 
     res.status(serviceResponse.statusCode).json(serviceResponse);
   }

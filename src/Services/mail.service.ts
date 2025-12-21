@@ -23,7 +23,7 @@ class EmailService {
       logoUrl: "https://www.imghippo.com/i/tKsT5878Mhc.png",
       imageUrl: "https://www.imghippo.com/i/tKsT5878Mhc.png",
       companyName: APP_CONFIG.COMPANY_NAME,
-      supportUrl: APP_CONFIG.SUPPORT_EMAIL,
+      supportUrl: APP_CONFIG.SUPPORT_EMAIL || "support@logiralms.com",
       socialIcons: MAIL_SERVICE_SOCIAL_ICONS,
       companyWebsite: "https://",
       preferencesUrl: "",

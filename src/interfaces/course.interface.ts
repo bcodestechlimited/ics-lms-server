@@ -1,6 +1,6 @@
-import {UploadedFile} from "express-fileupload";
-import {CourseDocument} from "../models/Course";
-import {Document, Types} from "mongoose";
+import { UploadedFile } from "express-fileupload";
+import { CourseDocument } from "../models/Course";
+import { Document, Types } from "mongoose";
 
 export interface BulkAssignCourseInterface {
   isIcsStaff: boolean;
@@ -22,7 +22,7 @@ export interface CourseQueryOptions {
     sort: {
       [x: string]: number;
     };
-    populate: string[] | {path: string; select?: string}[] | any;
+    populate: string[] | { path: string; select?: string }[] | any;
   };
   query: Record<string, any>;
 }

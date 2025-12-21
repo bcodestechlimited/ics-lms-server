@@ -1,12 +1,12 @@
-import {Request, Response} from "express";
-import {StatusCodes} from "http-status-codes";
-import {handleServiceResponse} from "../Middlewares/validation.middleware";
+import { Request, Response } from "express";
+import { StatusCodes } from "http-status-codes";
+import { handleServiceResponse } from "../Middlewares/validation.middleware";
 import UserService from "../Services/user.service";
 import UserDto from "../dtos/user.dto";
-import {ExtendedRequest} from "../interfaces/auth.interface";
-import {isMongooseIdValid} from "../utils/lib";
-import {ServiceResponse} from "../utils/service-response";
-import {IQueryParams} from "../shared/query.interface";
+import { ExtendedRequest } from "../interfaces/auth.interface";
+import { isMongooseIdValid } from "../utils/lib";
+import { ServiceResponse } from "../utils/service-response";
+import { IQueryParams } from "../shared/query.interface";
 
 const userService = new UserService();
 class UserController {
@@ -18,9 +18,9 @@ class UserController {
           ServiceResponse.failure(
             "User not found",
             null,
-            StatusCodes.NOT_FOUND
+            StatusCodes.NOT_FOUND,
           ),
-          res
+          res,
         );
       }
       const response = await userService.getMe(req.user._id);
@@ -29,24 +29,24 @@ class UserController {
           ServiceResponse.failure(
             "User not found",
             null,
-            StatusCodes.NOT_FOUND
+            StatusCodes.NOT_FOUND,
           ),
-          res
+          res,
         );
       }
 
       handleServiceResponse(
         ServiceResponse.success("Success", response, StatusCodes.OK),
-        res
+        res,
       );
     } catch (error) {
       handleServiceResponse(
         ServiceResponse.failure(
           "Internal Server Error",
           null,
-          StatusCodes.INTERNAL_SERVER_ERROR
+          StatusCodes.INTERNAL_SERVER_ERROR,
         ),
-        res
+        res,
       );
     }
   }
@@ -65,25 +65,25 @@ class UserController {
         ServiceResponse.failure(
           "Internal Server Error",
           null,
-          StatusCodes.INTERNAL_SERVER_ERROR
+          StatusCodes.INTERNAL_SERVER_ERROR,
         ),
-        res
+        res,
       );
     }
   }
 
   async getAUserById(req: Request, res: Response) {
     try {
-      const {id} = req.params;
+      const { id } = req.params;
       const response = await userService.fetchUserById(id);
       if (!response.success) {
         return handleServiceResponse(
           ServiceResponse.failure(
             "User not found",
             null,
-            StatusCodes.NOT_FOUND
+            StatusCodes.NOT_FOUND,
           ),
-          res
+          res,
         );
       }
       const UserObj = new UserDto(response.data);
@@ -91,19 +91,19 @@ class UserController {
       handleServiceResponse(
         ServiceResponse.success(
           "Success",
-          {...response, data: UserObj},
-          StatusCodes.OK
+          { ...response, data: UserObj },
+          StatusCodes.OK,
         ),
-        res
+        res,
       );
     } catch (error) {
       handleServiceResponse(
         ServiceResponse.failure(
           "Internal Server Error",
           null,
-          StatusCodes.INTERNAL_SERVER_ERROR
+          StatusCodes.INTERNAL_SERVER_ERROR,
         ),
-        res
+        res,
       );
     }
   }
@@ -113,28 +113,28 @@ class UserController {
       res.clearCookie("accessToken");
       handleServiceResponse(
         ServiceResponse.success("User logged out", null, StatusCodes.OK),
-        res
+        res,
       );
     } catch (error) {
       handleServiceResponse(
         ServiceResponse.failure(
           "Internal Server Error",
           null,
-          StatusCodes.INTERNAL_SERVER_ERROR
+          StatusCodes.INTERNAL_SERVER_ERROR,
         ),
-        res
+        res,
       );
     }
   }
 
   async getUserAnalytics(req: Request, res: Response) {
-    const {id} = req.params;
+    const { id } = req.params;
 
     const response = await userService.fetchCourseAnalytics(id);
     if (!response.success) {
       return handleServiceResponse(
         ServiceResponse.failure("Bad Request", null, StatusCodes.BAD_REQUEST),
-        res
+        res,
       );
     }
 
@@ -143,7 +143,7 @@ class UserController {
 
   // test: api for user to request for course extension
   public async userCanRequestForCourseExtension(req: Request, res: Response) {
-    const {courseId, expiryDate, reason, userId, extensionDays} = req.body;
+    const { courseId, expiryDate, reason, userId, extensionDays } = req.body;
 
     const serviceResponse = await userService.userCanRequestForCourseExtension({
       courseId,
@@ -158,7 +158,7 @@ class UserController {
 
   public async getUserExpiredCourses(req: ExtendedRequest, res: Response) {
     const serviceResponse = await userService.getUserExpiredCourses(
-      req.user?._id
+      req.user?._id,
     );
     res.status(serviceResponse.statusCode).json(serviceResponse);
   }
@@ -178,13 +178,13 @@ class UserController {
   }
 
   public async getMyCertificates(req: ExtendedRequest, res: Response) {
-    const {page = 1, limit = 10, sort = "issuedAt"} = req.query;
+    const { page = 1, limit = 10, sort = "issuedAt" } = req.query;
     const userId = req.user?._id;
 
     const response = await userService.fetchMyCertificates(userId, {
       page: Number(page),
       limit: Number(limit),
-      sort: {[sort as string]: -1},
+      sort: { [sort as string]: -1 },
     });
 
     res.status(response.statusCode).json(response);

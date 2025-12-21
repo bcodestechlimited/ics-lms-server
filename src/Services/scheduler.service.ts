@@ -1,6 +1,6 @@
 import Agenda from "agenda";
 import "dotenv/config";
-import {courseService} from "./course.service";
+import { courseService } from "./course.service";
 
 const mongoConnectionString = process.env.MONGO_URI as string;
 
@@ -19,6 +19,15 @@ agenda.define("expire courses", async (job) => {
     console.log("✅ Course expiration check completed.");
   } catch (error) {
     console.error("❌ Error running expiration job:", error);
+  }
+});
+
+agenda.define("bulk assign courses", async (job) => {
+  try {
+    const data = job.attrs.data;
+    await courseService.executeBulkJob(data);
+  } catch (err) {
+    console.error("Error running bulk assign job: ", err);
   }
 });
 
